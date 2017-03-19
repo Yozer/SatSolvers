@@ -5,25 +5,24 @@
 1. Glucose
 ```cd solvers/glucose/simp/
 make rs
-solvers/glucose/simp/glucose_static
 ```
 
 2. Lingeling
 ```cd solvers/lingeling
 ./configure && make
-solvers/lingeling/lingeling
 ```
 
 3. Minisat
 ```cd solvers/minisat/simp/
 make rs
-solvers/minisat/simp/minisat_static
 ```
 
 ## 2. Konfiguracja solverów
 Linki symboliczne:
 
 ```
-ln -s
+ln -s full_path/solvers/glucose/simp/glucose_static /usr/bin/glucose
+ln -s full_path/solvers/lingeling/lingeling /usr/bin/lingeling
+ln -s full_path/solvers/minisat/simp/minisat_static /usr/bin/minisat
 ```
 
