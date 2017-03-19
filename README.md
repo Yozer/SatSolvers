@@ -3,17 +3,20 @@
 ## 1. Budowanie solverów
 
 1. Glucose
-```cd solvers/glucose/simp/
+```
+cd solvers/glucose/simp/
 make rs
 ```
 
 2. Lingeling
-```cd solvers/lingeling
+```
+cd solvers/lingeling
 ./configure && make
 ```
 
 3. Minisat
-```cd solvers/minisat/simp/
+```
+cd solvers/minisat/simp/
 make rs
 ```
 
