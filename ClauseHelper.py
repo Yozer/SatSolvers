@@ -23,3 +23,11 @@ class ClauseHelper(object):
         variables = list(v)
         variables.sort()
         return "p cnf " + str(max(v)) + " " + str(len(clauses)) + "\n" + "\n".join(clauses), variables
+
+    @staticmethod
+    def checkClause(s):
+
+        if (s == ""):
+            return False
+        else:
+            return True
