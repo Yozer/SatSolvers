@@ -1,16 +1,18 @@
 from tkinter import Tk, Frame, BOTH, Button, ttk, filedialog
-class FileManger():
 
+
+class FileManger():
     __filePath = './'
 
     @staticmethod
     def openFile():
-        filename = filedialog.askopenfilename(initialdir = FileManger.__filePath, title="Select file",
-                                                   filetypes=(("cnf files", "*.cnf"), ("txt files", "*.txt"), ("all files", "*.*")))
+        filename = filedialog.askopenfilename(initialdir=FileManger.__filePath, title="Select file",
+                                              filetypes=(
+                                              ("cnf files", "*.cnf"), ("txt files", "*.txt"), ("all files", "*.*")))
 
         if (filename == ''):
             return ''
-        file = open(filename,'r')
+        file = open(filename, 'r')
 
         klauzula = file.readline()
 
@@ -19,9 +21,9 @@ class FileManger():
 
     @staticmethod
     def saveFile(text):
-        filename = filedialog.asksaveasfilename(initialdir = FileManger.__filePath,title = "Select file",filetypes = (("cnf files", "*.cnf"), ("txt files", "*.txt"), ("all files","*.*")))
+        filename = filedialog.asksaveasfilename(initialdir=FileManger.__filePath, title="Select file", filetypes=(
+        ("cnf files", "*.cnf"), ("txt files", "*.txt"), ("all files", "*.*")))
 
-        if (filename != ''):
-
-            file = open(filename,'w')
+        if filename != '':
+            file = open(filename, 'w')
             file.close()
