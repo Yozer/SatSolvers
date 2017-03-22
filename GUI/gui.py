@@ -1,7 +1,7 @@
 from tkinter import Tk
 
 
-from GUI.MainFrame import MainFrame
+from MainFrame import MainFrame
 from GUI.GUI_Settings import GUI_Settings
 
 root = Tk()
