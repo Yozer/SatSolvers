@@ -1,5 +1,5 @@
 import re as re
-
+from pyeda.inter import  *
 
 class ClauseHelper(object):
 
@@ -25,9 +25,22 @@ class ClauseHelper(object):
         return "p cnf " + str(max(v)) + " " + str(len(clauses)) + "\n" + "\n".join(clauses), variables
 
     @staticmethod
-    def checkClause(s):
-
+    def check_clause(s):
         if (s == ""):
             return False
         else:
             return True
+
+    @staticmethod
+    def is_cnf(s):
+        return expr(s).is_cnf()
+
+    @staticmethod
+    def parse_to_cnf(s):
+        clause = expr(s)
+        return clause.to_cnf()
+
+    @staticmethod
+    def parse_to_dimacs_pyeda(expression):
+
+        return expr2dimacscnf(expression.to_cnf())
