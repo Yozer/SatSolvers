@@ -52,6 +52,9 @@ class AbstractSolver(object, metaclass=abc.ABCMeta):
 
         return values
 
+    def is_Sat(self):
+        return self.__sat == SolverResult.SAT
+
     @abc.abstractmethod
     def __str__(self):
         raise NotImplementedError('users must define __str__ to use this base class')
