@@ -1,5 +1,7 @@
 import re as re
 from pyeda.inter import  *
+from pyeda.parsing import lex, boolexpr
+
 
 class ClauseHelper(object):
 
@@ -37,8 +39,15 @@ class ClauseHelper(object):
 
     @staticmethod
     def parse_to_cnf(s):
-        clause = expr(s)
-        return clause.to_cnf()
+        try:
+            clause = expr(s)
+
+            return clause.to_cnf()
+        except lex.RunError:
+            return "RUN ERROR"
+        except boolexpr.Error as error:
+            return error.__str__()
+
 
     @staticmethod
     def parse_to_dimacs_pyeda(expression):
