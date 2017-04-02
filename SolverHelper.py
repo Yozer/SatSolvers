@@ -5,7 +5,7 @@ from ClauseHelper import ClauseHelper
 
 from pyeda.boolalg import expr
 
-
+# parser skraca formuły, np. x & ~x - da 0, czyli unsat, a y | (x & ~x) da tylko y
 class SolverHelper():
 
     __solvers = {'Glucose':GlucoseSolver(),'Lingeling':LingelingSolver(),'MiniSat':MiniSatSolver()}
@@ -16,6 +16,9 @@ class SolverHelper():
             cnf = ClauseHelper.parse_to_cnf(s)
             if False == isinstance(cnf,expr.Expression):
                 return cnf
+            if isinstance(cnf,expr._Zero):
+                return "UNSAT"
+
 
             mapa, dimacs = ClauseHelper.parse_to_dimacs_pyeda(cnf)
             dimacs = dimacs.__str__()
