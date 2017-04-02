@@ -3,7 +3,7 @@ from MiniSatSolver import MiniSatSolver
 from LingelingSolver import LingelingSolver
 from ClauseHelper import ClauseHelper
 
-from enum import Enum
+from pyeda.boolalg import expr
 
 
 class SolverHelper():
@@ -14,22 +14,27 @@ class SolverHelper():
     def solve(s, solver = 'Glucose'):
         if ClauseHelper.check_clause(s):
             cnf = ClauseHelper.parse_to_cnf(s)
+            if False == isinstance(cnf,expr.Expression):
+                return cnf
+
             mapa, dimacs = ClauseHelper.parse_to_dimacs_pyeda(cnf)
             dimacs = dimacs.__str__()
             model = SolverHelper.__solvers[solver].solve(dimacs.__str__())
 
 
             if SolverHelper.__solvers[solver].is_Sat():
-                print ("SAT")
+
+                result = "SAT\n"
 
                 for x in model.keys():
-                    print (str(mapa[x]) + "=" + str(model[x]))
+                    result+=str(mapa[x]) + "=" + str(model[x]) + "\n"
 
+                return result
             else:
-                print ("UNSAT")
+                return "UNSAT"
 
         else:
-            print ("Bad clause")
+            return "Bad clause"
 
 
     @staticmethod
