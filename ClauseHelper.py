@@ -37,12 +37,14 @@ class ClauseHelper(object):
     def is_cnf(s):
         return expr(s).is_cnf()
 
+
     @staticmethod
     def parse_to_cnf(s):
         try:
             clause = expr(s)
+            variables = set(re.findall("\w+", s))
 
-            return clause.to_cnf()
+            return clause.to_cnf(), variables
         except lex.RunError:
             return "RUN ERROR"
         except boolexpr.Error as error:
