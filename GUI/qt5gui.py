@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
-                             QAction, QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget)
+                             QAction, QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
 from PyQt5.QtGui import QIcon
 from GUI_Settings import GUI_Settings
 
@@ -11,22 +11,24 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.initUI()
-        self.initText()
+        self.__initToolbar()
+        self.__initText()
+        self.__initUI()
 
-    def initUI(self):
-        self.textEdit = QTextEdit()
-        self.resultText = QTextEdit()
-        self.resultText.setFixedHeight(self.resultText.document().size().height() * 2 + self.resultText.contentsMargins().top() * 1)
-        self.resultText.setReadOnly(True)
+    def __initUI(self):
 
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.textEdit)
-        vbox.addWidget(self.resultText)
-        widg = QWidget()
-        widg.setLayout(vbox)
-        self.setCentralWidget(widg)
         #self.setCentralWidget(self.textEdit)
+
+        #self.setPalette(GUI_Settings.palette)
+        #self.setGeometry(300, 300)
+        self.setMinimumSize(300,300)
+        self.center()
+        self.setWindowTitle('File dialog')
+        self.show()
+
+
+    def __initToolbar(self):
+
         self.statusBar()
 
         newFile = QAction(QIcon('Icons/newFile.png'), 'New File', self)
@@ -49,6 +51,7 @@ class MainWindow(QMainWindow):
         executeButton.setStatusTip('Solve clause')
         executeButton.triggered.connect(self.solve)
 
+        # TODO dodanie rysowanie graphu z networkx i matplotlib
         printGraph = QAction(QIcon('Icons/graph.png'), 'Print graph', self)
         printGraph.setStatusTip('Print graph')
 
@@ -73,21 +76,34 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.solversChoice)
         toolbar.addAction(printGraph)
 
-        #self.setPalette(GUI_Settings.palette)
-        #self.setGeometry(300, 300)
-        self.setMinimumSize(300,300)
-        self.center()
-        self.setWindowTitle('File dialog')
-        self.show()
 
-    def initText(self):
-        try:
-            f = open(GUI_Settings.lastClauseFile,'r')
-            self.textEdit.setText(f.read())
-            f.close()
-        except IOError:
-            f = open(GUI_Settings.lastClauseFile,'a')
-            f.close()
+    def __initText(self):
+
+        self.textEdit = QTextEdit()
+        self.resultText = QTextEdit()
+        #self.resultText.setFixedHeight(self.resultText.document().size().height() * 2 + self.resultText.contentsMargins().top() * 1)
+        self.resultText.setFixedWidth(self.resultText.document().size().width()*10)
+
+        self.resultText.setReadOnly(True)
+
+        vbox = QHBoxLayout()
+        vbox.addWidget(self.textEdit)
+        vbox.addWidget(self.resultText)
+        widg = QWidget()
+        widg.setLayout(vbox)
+        self.setCentralWidget(widg)
+
+        if GUI_Settings.lastOpenFile == GUI_Settings.defaultFile:
+            self.__openFile = ""
+        else:
+            try:
+                f = open(GUI_Settings.lastOpenFile,'r')
+                self.textEdit.setText(f.read())
+                f.close()
+                self.__openFile = GUI_Settings.lastOpenFile
+            except IOError:
+                f = open(GUI_Settings.lastOpenFile,'a')
+                f.close()
 
     def center(self):
 
@@ -98,11 +114,31 @@ class MainWindow(QMainWindow):
 
 
     def newFile(self):
-        self.textEdit.clear()
+        if self.__openFile != "":
+            buttonReply = QMessageBox.question(self, 'Save file', "Save changes?",
+                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if buttonReply == QMessageBox.Yes:
+                f = open(self.__openFile, 'w')
+                with f:
+                    f.write(self.textEdit.toPlainText())
+                self.__openFile = ""
+        elif self.textEdit.toPlainText() != "":
+            buttonReply = QMessageBox.question(self, 'Save file', "Save file?",
+                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if buttonReply == QMessageBox.Yes:
+                self.saveFile()
+        else:
+            self.textEdit.clear()
 
     def openFile(self):
 
+        buttonReply = QMessageBox.question(self, 'Save file', "Save changes?",
+                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if buttonReply == QMessageBox.Yes:
+            self.saveFile()
+
         fname = QFileDialog.getOpenFileName(self, 'Open file', '',"Text Files (*.txt);;All Files (*)")
+        self.__openFile = fname[0]
         if fname[0]:
             f = open(fname[0], 'r')
 
@@ -111,40 +147,66 @@ class MainWindow(QMainWindow):
                 self.textEdit.setText(data)
 
     def saveFile(self):
-        fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "", "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
-        if fname[0]:
-            f = open(fname[0], 'w')
-            with f:
-                f.write(self.textEdit.toPlainText())
+
+        if self.__openFile != "":
+
+            fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", self.__openFile, "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
+            if fname[0]:
+                f = open(fname[0], 'w')
+                with f:
+                    f.write(self.textEdit.toPlainText())
+        else:
+            fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "", "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
+            if fname[0]:
+                f = open(fname[0], 'w')
+                with f:
+                    f.write(self.textEdit.toPlainText())
+
 
     def solve(self):
         clause = self.textEdit.toPlainText()
 
         result = SolverHelper.solve(clause,self.solversChoice.currentText())
-        self.resultText.setPlainText(result)
+
+        if result[0] == 'S' or result[0] == 'U':
+            self.resultText.setPlainText(result)
+
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("Error")
+            msg.setInformativeText(result)
+            msg.setWindowTitle("Error")
+            msg.exec_()
 
     def closeEvent(self, event):
 
         reply = QMessageBox.question(self, 'Message',
-                                     "Are you sure to quit?", QMessageBox.No |
+                                     "Are you sure to quit without saving?", QMessageBox.Save | QMessageBox.No |
                                      QMessageBox.Yes, QMessageBox.No)
 
-        f = open(GUI_Settings.lastClauseFile,'w')
-        with f:
-            f.write(self.textEdit.toPlainText())
-
-        f.close()
-
         if reply == QMessageBox.Yes:
+            self.__updateSettings()
+            event.accept()
+        elif reply == QMessageBox.Save:
+            self.__updateSettings()
+            self.saveFile()
             event.accept()
         else:
             event.ignore()
 
+    def __updateSettings(self):
+        if self.__openFile == "":
+            GUI_Settings.updateValue('File','LastOpenFile',GUI_Settings.defaultFile)
+        else:
+            GUI_Settings.updateValue('File','LastOpenFile',str(self.__openFile))
+        GUI_Settings.closeEvent()
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    GUI_Settings.initialize()
     ex = MainWindow()
     #app.setStyle('Windows')
     #print (app.style().metaObject().className())
     #print (QStyleFactory.keys())
-
     sys.exit(app.exec_())
