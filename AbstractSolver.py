@@ -20,7 +20,7 @@ class AbstractSolver(object, metaclass=abc.ABCMeta):
         return {abs(x): x > 0 for x in values}
 
     def __call_process(self, dimacs):
-        proc_info = [AbstractSolver._exe] + AbstractSolver._params
+        proc_info = [self._exe] + self._params
         proc = subprocess.Popen(proc_info,
                                 stdout=subprocess.PIPE,
                                 stdin=subprocess.PIPE)

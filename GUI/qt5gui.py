@@ -1,25 +1,28 @@
 import sys
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
                              QAction, QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
-from PyQt5.QtGui import QIcon
-from GUI_Settings import GUI_Settings
+from PyQt5.QtGui import QIcon, QPalette
 
-sys.path.append("../")
+sys.path.append("GUI")
+from GUI.Settings import Settings
 from SolverHelper import SolverHelper
+from GUI.Editor import Editor
+from GUI.ConfigDialog import ConfigDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.settings = Settings()
         self.__initToolbar()
         self.__initText()
         self.__initUI()
 
     def __initUI(self):
 
-        #self.setCentralWidget(self.textEdit)
 
-        #self.setPalette(GUI_Settings.palette)
+
+        self.setPalette(self.settings.getPallete())
         #self.setGeometry(300, 300)
         self.setMinimumSize(300,300)
         self.center()
@@ -54,7 +57,11 @@ class MainWindow(QMainWindow):
         # TODO dodanie rysowanie graphu z networkx i matplotlib
         printGraph = QAction(QIcon('Icons/graph.png'), 'Print graph', self)
         printGraph.setStatusTip('Print graph')
+        printGraph.triggered.connect(self.__printGraph)
 
+        settingsButton = QAction(QIcon('Icons/settings.png'), 'Settings', self)
+        settingsButton.setStatusTip('Settings')
+        settingsButton.triggered.connect(self.__openSettings)
 
         self.solversChoice = QComboBox()
 
@@ -67,7 +74,7 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(openFile)
         fileMenu.addAction(saveFile)
 
-        toolbar = self.addToolBar('Open')
+        toolbar = self.addToolBar('Toolbar')
         toolbar.addAction(newFile)
         toolbar.addAction(openFile)
         toolbar.addAction(saveFile)
@@ -75,11 +82,13 @@ class MainWindow(QMainWindow):
         toolbar.addAction(executeButton)
         toolbar.addWidget(self.solversChoice)
         toolbar.addAction(printGraph)
+        toolbar.addSeparator()
+        toolbar.addAction(settingsButton)
 
 
     def __initText(self):
 
-        self.textEdit = QTextEdit()
+        self.textEdit = Editor()
         self.resultText = QTextEdit()
         #self.resultText.setFixedHeight(self.resultText.document().size().height() * 2 + self.resultText.contentsMargins().top() * 1)
         self.resultText.setFixedWidth(self.resultText.document().size().width()*10)
@@ -93,16 +102,16 @@ class MainWindow(QMainWindow):
         widg.setLayout(vbox)
         self.setCentralWidget(widg)
 
-        if GUI_Settings.lastOpenFile == GUI_Settings.defaultFile:
+        if Settings.lastOpenFile == Settings.defaultFile:
             self.__openFile = ""
         else:
             try:
-                f = open(GUI_Settings.lastOpenFile,'r')
+                f = open(Settings.lastOpenFile,'r')
                 self.textEdit.setText(f.read())
                 f.close()
-                self.__openFile = GUI_Settings.lastOpenFile
+                self.__openFile = Settings.lastOpenFile
             except IOError:
-                f = open(GUI_Settings.lastOpenFile,'a')
+                f = open(Settings.lastOpenFile,'a')
                 f.close()
 
     def center(self):
@@ -112,6 +121,17 @@ class MainWindow(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def __openSettings(self):
+        dialog = ConfigDialog(self.settings)
+
+        dialog.exec_()
+        dialog.show()
+
+        self.setPalette(self.settings.getPallete())
+        self.settings.updateParserSettings()
+
+    def __printGraph(self):
+        print(self.settings.palleteType)
 
     def newFile(self):
         if self.__openFile != "":
@@ -127,8 +147,8 @@ class MainWindow(QMainWindow):
                                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if buttonReply == QMessageBox.Yes:
                 self.saveFile()
-        else:
-            self.textEdit.clear()
+
+        self.textEdit.clear()
 
     def openFile(self):
 
@@ -166,7 +186,7 @@ class MainWindow(QMainWindow):
     def solve(self):
         clause = self.textEdit.toPlainText()
 
-        result = SolverHelper.solve(clause,self.solversChoice.currentText())
+        result = SolverHelper.solve(clause,self.settings.parser,self.solversChoice.currentText())
 
         if result[0] == 'S' or result[0] == 'U':
             self.resultText.setPlainText(result)
@@ -197,14 +217,16 @@ class MainWindow(QMainWindow):
 
     def __updateSettings(self):
         if self.__openFile == "":
-            GUI_Settings.updateValue('File','LastOpenFile',GUI_Settings.defaultFile)
+            self.settings.updateValue('File','LastOpenFile',Settings.defaultFile)
         else:
-            GUI_Settings.updateValue('File','LastOpenFile',str(self.__openFile))
-        GUI_Settings.closeEvent()
+            self.settings.updateValue('File','LastOpenFile',str(self.__openFile))
+
+        self.settings.updateValue('Pallete', 'PalleteType',str(self.settings.palleteType))
+        self.settings.closeEvent()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    GUI_Settings.initialize()
+    Settings.initialize()
     ex = MainWindow()
     #app.setStyle('Windows')
     #print (app.style().metaObject().className())
