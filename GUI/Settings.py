@@ -1,11 +1,46 @@
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QDir
 from configparser import  ConfigParser
 
 
+class ParserSettings():
+
+    Equal = '<=>'
+    Implies = '=>'
+    Not = '~'
+    Or = '|'
+    And = '&'
+    Xor = '^'
+
+    def __init__(self):
+        pass
+
+    def to_default(self):
+        self.Equal = ParserSettings.Equal
+        self.Implies = ParserSettings.Implies
+        self.Not = ParserSettings.Not
+        self.Or = ParserSettings.Or
+        self.And = ParserSettings.And
+        self.Xor = ParserSettings.Xor
+
+    def changeMap(self):
+        result = dict()
+        result[self.Equal] = ParserSettings.Equal
+        result[self.Implies] = ParserSettings.Implies
+        result[self.Not] = ParserSettings.Not
+        result[self.Or] = ParserSettings.Or
+        result[self.And] = ParserSettings.And
+        result[self.Xor] = ParserSettings.Xor
+
+
+
+class PalleteType():
+    Default = 1
+    Dark = 2
 
 # TODO poprawić pallete żeby, ładnie wyglądała, wywalić nie potrzebne,
 # dodać last open file z pliku ---- albo wszystkie settings do pliku
-class GUI_Settings():
+class Settings():
 
     clauseTextFont = "{} {} {}".format('arial',14,'normal')
     clauseTextHeight = 5
@@ -20,74 +55,73 @@ class GUI_Settings():
     lastOpenFile = ""
     defaultFile = ""
 
-
-    palette = QtGui.QPalette()
+    __defaultPallete = QtGui.QPalette()
+    __palette = QtGui.QPalette()
     __config = ConfigParser()
     __settings = ""
 
-    setPallete = True
+    palleteType = 1
 
     @staticmethod
     def initialize(settings = './settings.ini'):
-        GUI_Settings.__initPallete()
-        GUI_Settings.__settings = settings
-        GUI_Settings.__config.read(settings)
+        #print (QDir.currentPath())
 
-        GUI_Settings.lastOpenFile = GUI_Settings.__config.get('File','LastOpenFile')
-        GUI_Settings.defaultFile = GUI_Settings.__config.get('File','DefaultFile')
-        GUI_Settings.setPallete = GUI_Settings.__config.getboolean('Pallete','DefaultPallete')
+        Settings.__initPallete()
+        Settings.__settings = settings
+        Settings.__config.read(settings)
 
-
-    @staticmethod
-    def updateValue(section,where,value):
-        GUI_Settings.__config.set(section,where,value)
+        Settings.lastOpenFile = Settings.__config.get('File','LastOpenFile')
+        Settings.defaultFile = Settings.__config.get('File','DefaultFile')
+        Settings.palleteType = Settings.__config.getint('Pallete','PalleteType')
 
 
-    @staticmethod
-    def closeEvent():
-        with open(GUI_Settings.__settings,'w') as configFile:
-            GUI_Settings.__config.write(configFile)
+    def updateValue(self,section,where,value):
+        self.__config.set(section,where,value)
+
+
+
+    def closeEvent(self):
+        with open(Settings.__settings,'w') as configFile:
+            self.__config.write(configFile)
 
     @staticmethod
     def __initPallete():
-        GUI_Settings.palette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
-        GUI_Settings.palette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
-        GUI_Settings.palette.setColor(QtGui.QPalette.Base, QtGui.QColor(15, 15, 15))
-        GUI_Settings.palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
-        GUI_Settings.palette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.white)
-        GUI_Settings.palette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
-        GUI_Settings.palette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
-        GUI_Settings.palette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
-        GUI_Settings.palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
-        GUI_Settings.palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
+        Settings.__palette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
+        Settings.__palette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
+        Settings.__palette.setColor(QtGui.QPalette.Base, QtGui.QColor(15, 15, 15))
+        Settings.__palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
+        Settings.__palette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.white)
+        Settings.__palette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
+        Settings.__palette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
+        Settings.__palette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
+        Settings.__palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
+        Settings.__palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
 
-        GUI_Settings.palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(142, 45, 197).lighter())
-        GUI_Settings.palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
+        Settings.__palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(142, 45, 197).lighter())
+        Settings.__palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
 
-from enum import Enum
-
-class ParserSettings():
-
-    Equal = '<=>'
-    Implies = '=>'
-    Not = '~'
-    Or = '|'
-    And = '&'
-    Xor = '^'
-
-    def __init__(self):
-        pass
-
-
-class PalleteType(Enum):
-
-    Default = 1
-    Dark = 2
-
-
-class Settings():
+    def getPallete(self):
+        if self.palleteType == PalleteType.Dark:
+            return self.__palette
+        else:
+            return self.__defaultPallete
 
 
     def __init__(self):
         self.parser = ParserSettings()
-        self.pallete = PalleteType.Default
+
+        self.parser.Equal = self.__config.get('ParserSettings','Equal')
+        self.parser.Implies = self.__config.get('ParserSettings','Implies')
+        self.parser.Not = self.__config.get('ParserSettings','Not')
+        self.parser.Or = self.__config.get('ParserSettings','Or')
+        self.parser.And = self.__config.get('ParserSettings','And')
+        self.parser.Xor = self.__config.get('ParserSettings','Xor')
+
+    def updateParserSettings(self):
+        self.__config.set('ParserSettings', 'Equal', self.parser.Equal)
+        self.__config.set('ParserSettings', 'Implies', self.parser.Implies)
+        self.__config.set('ParserSettings', 'Not', self.parser.Not)
+        self.__config.set('ParserSettings', 'Or', self.parser.Or)
+        self.__config.set('ParserSettings', 'And', self.parser.And)
+        self.__config.set('ParserSettings', 'Xor', self.parser.Xor)
+

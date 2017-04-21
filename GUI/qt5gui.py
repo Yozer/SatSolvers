@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
                              QAction, QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
 from PyQt5.QtGui import QIcon, QPalette
 
-sys.path.append("GUI")
+sys.path.append("../")
 from GUI.Settings import Settings
 from SolverHelper import SolverHelper
 from GUI.Editor import Editor
