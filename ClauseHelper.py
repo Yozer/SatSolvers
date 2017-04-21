@@ -38,10 +38,16 @@ class ClauseHelper(object):
         return expr(s).is_cnf()
 
 
+    # TODO parsowanie klauzuli
     @staticmethod
-    def parse_to_cnf(s):
+    def __change(s,settings):
+        settings.changeMap()
+        return s
+
+    @staticmethod
+    def parse_to_cnf(s,settings):
         try:
-            clause = expr(s)
+            clause = expr(ClauseHelper.__change(s,settings))
             variables = set(re.findall("\w+", s))
 
             return clause.to_cnf(), variables

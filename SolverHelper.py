@@ -11,9 +11,9 @@ class SolverHelper():
     __solvers = {'Glucose':GlucoseSolver(),'Lingeling':LingelingSolver(),'MiniSat':MiniSatSolver()}
 
     @staticmethod
-    def solve(s, solver = 'Glucose'):
+    def solve(s, settings, solver = 'Glucose'):
         if ClauseHelper.check_clause(s):
-            cnf = ClauseHelper.parse_to_cnf(s)
+            cnf = ClauseHelper.parse_to_cnf(s,settings)
             if False == isinstance(cnf[0],expr.Expression):
                 return cnf
             if isinstance(cnf[0],expr._Zero):
@@ -21,8 +21,8 @@ class SolverHelper():
 
             mapa, dimacs = ClauseHelper.parse_to_dimacs_pyeda(cnf[0])
             dimacs = dimacs.__str__()
+            tmp = SolverHelper.__solvers[solver]
             model = SolverHelper.__solvers[solver].solve(dimacs.__str__())
-
 
             if SolverHelper.__solvers[solver].is_Sat():
 
