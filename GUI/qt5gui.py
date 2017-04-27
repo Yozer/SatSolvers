@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
                              QAction, QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
 from PyQt5.QtGui import QIcon, QPalette
-
+from PyQt5.QtCore import Qt
 sys.path.append("../")
 from GUI.Settings import Settings
 from SolverHelper import SolverHelper
@@ -20,13 +20,13 @@ class MainWindow(QMainWindow):
 
     def __initUI(self):
 
-
-
+        self.setWindowIcon(QIcon('./Icons/logo.png'))
+        self.setToolButtonStyle(Qt.ToolButtonFollowStyle)
         self.setPalette(self.settings.getPallete())
         #self.setGeometry(300, 300)
         self.setMinimumSize(300,300)
         self.center()
-        self.setWindowTitle('File dialog')
+        self.setWindowTitle('SatSolver')
         self.show()
 
 
@@ -54,6 +54,10 @@ class MainWindow(QMainWindow):
         executeButton.setStatusTip('Solve clause')
         executeButton.triggered.connect(self.solve)
 
+        exportDimacs = QAction(QIcon('Icons/export_dimacs.png'),'Export dimacs',self)
+        exportDimacs.setStatusTip('Export clause to dimacs')
+        exportDimacs.triggered.connect(self.__export)
+
         # TODO dodanie rysowanie graphu z networkx i matplotlib
         printGraph = QAction(QIcon('Icons/graph.png'), 'Print graph', self)
         printGraph.setStatusTip('Print graph')
@@ -73,11 +77,13 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(newFile)
         fileMenu.addAction(openFile)
         fileMenu.addAction(saveFile)
+        fileMenu.addAction(exportDimacs)
 
         toolbar = self.addToolBar('Toolbar')
         toolbar.addAction(newFile)
         toolbar.addAction(openFile)
         toolbar.addAction(saveFile)
+        toolbar.addAction(exportDimacs)
         toolbar.addSeparator()
         toolbar.addAction(executeButton)
         toolbar.addWidget(self.solversChoice)
@@ -182,6 +188,23 @@ class MainWindow(QMainWindow):
                 with f:
                     f.write(self.textEdit.toPlainText())
 
+    def __export(self):
+        dimacs = SolverHelper.toDimacs(self.textEdit.toPlainText(),self.settings.parser)
+        if dimacs[0] == 'p':
+            fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
+                                                "Dimacs (*.cnf)")
+            if fname[0]:
+                f = open(fname[0]+'.cnf', 'w')
+                print(fname)
+                with f:
+                    f.write(dimacs)
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("Error")
+            msg.setInformativeText(dimacs)
+            msg.setWindowTitle("Error")
+            msg.exec_()
 
     def solve(self):
         clause = self.textEdit.toPlainText()
