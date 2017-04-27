@@ -1,14 +1,28 @@
-from GlucoseSolver import GlucoseSolver
-from MiniSatSolver import MiniSatSolver
-from LingelingSolver import LingelingSolver
 from ClauseHelper import ClauseHelper
-
+from Solvers import *
 from pyeda.boolalg import expr
 
 # parser skraca formuły, np. x & ~x - da 0, czyli unsat, a y | (x & ~x) da tylko y
 class SolverHelper():
 
-    __solvers = {'Glucose':GlucoseSolver(),'Lingeling':LingelingSolver(),'MiniSat':MiniSatSolver()}
+    __solvers = {'Glucose':GlucoseSolver(),'Lingeling':LingelingSolver(),'MiniSat':MiniSatSolver(),'Riss':RissSolver(),
+                 'JeruSat':JeruSatSolver(),'RSAT':RSatSolver(),"Limmat":LimmatSolver()}
+
+    @staticmethod
+    def toDimacs(s,settings):
+        if ClauseHelper.check_clause(s):
+            cnf = ClauseHelper.parse_to_cnf(s,settings)
+            if False == isinstance(cnf[0],expr.Expression):
+                return cnf
+            if isinstance(cnf[0],expr._Zero):
+                return "Pusta klauzula"
+
+            mapa, dimacs = ClauseHelper.parse_to_dimacs_pyeda(cnf[0])
+
+            return dimacs.__str__()
+        else:
+            return "Pusta klauzula"
+
 
     @staticmethod
     def solve(s, settings, solver = 'Glucose'):
@@ -21,7 +35,6 @@ class SolverHelper():
 
             mapa, dimacs = ClauseHelper.parse_to_dimacs_pyeda(cnf[0])
             dimacs = dimacs.__str__()
-            tmp = SolverHelper.__solvers[solver]
             model = SolverHelper.__solvers[solver].solve(dimacs.__str__())
 
             if SolverHelper.__solvers[solver].is_Sat():
