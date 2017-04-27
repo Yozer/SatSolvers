@@ -1,7 +1,7 @@
 import abc as abc
 import subprocess
 from enum import Enum
-
+import os
 
 class SolverResult(Enum):
     UNSAT = 1
@@ -12,12 +12,33 @@ class SolverResult(Enum):
 class AbstractSolver(object, metaclass=abc.ABCMeta):
     _exe = ""
     _params = []
-
+    _file = False
     __sat = SolverResult.UNKNOWN
 
     def solve(self, dimacs):
-        values = self.__call_process(dimacs)
+        if self._file:
+            values = self.__call_file_process(dimacs)
+        else:
+            values = self.__call_process(dimacs)
         return {abs(x): x > 0 for x in values}
+
+    def __call_file_process(self,dimacs):
+        file = "tmpClause.cnf"
+
+        f = open(file, 'w')
+        with f:
+            f.write(dimacs)
+
+        proc_info = [self._exe,file] + self._params
+        proc = subprocess.Popen(proc_info,
+                                stdout=subprocess.PIPE)
+        #proc.stdin.close()
+        proc.wait()
+        result = proc.stdout.read().decode('ascii')
+
+        os.remove(file)
+
+        return self.__parse_output(result)
 
     def __call_process(self, dimacs):
         proc_info = [self._exe] + self._params
@@ -29,6 +50,7 @@ class AbstractSolver(object, metaclass=abc.ABCMeta):
         proc.stdin.close()
         proc.wait()
         result = proc.stdout.read().decode('ascii')
+
         return self.__parse_output(result)
 
     def __parse_output(self, output):
