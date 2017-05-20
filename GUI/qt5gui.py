@@ -1,12 +1,12 @@
-import sys
+import sys,re
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
-                             QAction, QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
+                             QAction, QFileDialog, QSplitter,QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
 from PyQt5.QtGui import QIcon, QPalette
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt,QFileInfo
 sys.path.append("../")
 from GUI.Settings import Settings
 from SolverHelper import SolverHelper
-from GUI.Editor import Editor
+from GUI.Editor import CodeEditor
 from GUI.ConfigDialog import ConfigDialog
 
 class MainWindow(QMainWindow):
@@ -26,7 +26,8 @@ class MainWindow(QMainWindow):
         #self.setGeometry(300, 300)
         self.setMinimumSize(300,300)
         self.center()
-        self.setWindowTitle('SatSolver')
+        #self.setWindowTitle('SatSolver')
+        self.showMaximized()
         self.show()
 
 
@@ -72,6 +73,7 @@ class MainWindow(QMainWindow):
         for item in SolverHelper.get_solvers():
             self.solversChoice.addItem(item)
 
+
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(newFile)
@@ -94,7 +96,7 @@ class MainWindow(QMainWindow):
 
     def __initText(self):
 
-        self.textEdit = Editor()
+        self.textEdit = CodeEditor(self.settings)
         self.resultText = QTextEdit()
         #self.resultText.setFixedHeight(self.resultText.document().size().height() * 2 + self.resultText.contentsMargins().top() * 1)
         self.resultText.setFixedWidth(self.resultText.document().size().width()*10)
@@ -103,22 +105,42 @@ class MainWindow(QMainWindow):
 
         vbox = QHBoxLayout()
         vbox.addWidget(self.textEdit)
+        #vbox.addWidget(QSplitter())
         vbox.addWidget(self.resultText)
-        widg = QWidget()
-        widg.setLayout(vbox)
+
+        widg = QSplitter()
+        widg.addWidget(self.textEdit)
+        widg.addWidget(self.resultText)
+        #widg.setLayout(vbox)
         self.setCentralWidget(widg)
 
         if Settings.lastOpenFile == Settings.defaultFile:
             self.__openFile = ""
+            self.__openFileType = False
         else:
             try:
                 f = open(Settings.lastOpenFile,'r')
                 self.textEdit.setText(f.read())
                 f.close()
                 self.__openFile = Settings.lastOpenFile
+                if re.match(r'.*\.cnf',self.__openFile):
+                    self.__openFileType = True
+                else:
+                    self.__openFileType = False
+
             except IOError:
                 f = open(Settings.lastOpenFile,'a')
                 f.close()
+        self.__setTitle()
+
+    def __setTitle(self):
+        if self.__openFile:
+            shownName = QFileInfo(self.__openFile).fileName()
+        else:
+            shownName = 'untitled.txt'
+
+
+        self.setWindowTitle("%s[*] - Application" % shownName)
 
     def center(self):
 
@@ -135,6 +157,7 @@ class MainWindow(QMainWindow):
 
         self.setPalette(self.settings.getPallete())
         self.settings.updateParserSettings()
+        self.textEdit.highlightCurrentLine()
 
     def __printGraph(self):
         print(self.settings.palleteType)
@@ -153,8 +176,11 @@ class MainWindow(QMainWindow):
                                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if buttonReply == QMessageBox.Yes:
                 self.saveFile()
-
+        self.__openFileType = ""
+        self.__openFile = ""
         self.textEdit.clear()
+
+        self.__setTitle()
 
     def openFile(self):
 
@@ -163,14 +189,21 @@ class MainWindow(QMainWindow):
         if buttonReply == QMessageBox.Yes:
             self.saveFile()
 
-        fname = QFileDialog.getOpenFileName(self, 'Open file', '',"Text Files (*.txt);;All Files (*)")
+        fname = QFileDialog.getOpenFileName(self, 'Open file', '',"Text Files (*.txt);;Cnf Files (*.cnf);;All Files (*)")
         self.__openFile = fname[0]
+        self.__openFileType = fname[1]
         if fname[0]:
             f = open(fname[0], 'r')
+            if re.match(r'.*\.cnf', self.__openFile):
+                self.__openFileType = True
+            else:
+                self.__openFileType = False
 
             with f:
                 data = f.read()
                 self.textEdit.setText(data)
+
+        self.__setTitle()
 
     def saveFile(self):
 
@@ -187,6 +220,7 @@ class MainWindow(QMainWindow):
                 f = open(fname[0], 'w')
                 with f:
                     f.write(self.textEdit.toPlainText())
+
 
     def __export(self):
         dimacs = SolverHelper.toDimacs(self.textEdit.toPlainText(),self.settings.parser)
@@ -206,10 +240,15 @@ class MainWindow(QMainWindow):
             msg.setWindowTitle("Error")
             msg.exec_()
 
+    # TODO komentarze i zakładki, numeracja linii, kolorowania linii jesli błąd, lub na dole
+    # TODO komentowanie klauzul,
     def solve(self):
         clause = self.textEdit.toPlainText()
 
-        result = SolverHelper.solve(clause,self.settings.parser,self.solversChoice.currentText())
+        if self.__openFileType:
+            result = SolverHelper.solveDimacs(clause,self.solversChoice.currentText())
+        else:
+            result = SolverHelper.solve(clause,self.settings.parser,self.solversChoice.currentText())
 
         if result[0] == 'S' or result[0] == 'U':
             self.resultText.setPlainText(result)
@@ -225,8 +264,8 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
 
         reply = QMessageBox.question(self, 'Message',
-                                     "Are you sure to quit without saving?", QMessageBox.Save | QMessageBox.No |
-                                     QMessageBox.Yes, QMessageBox.No)
+                                     "Are you sure to quit without saving?", QMessageBox.Save | QMessageBox.Cancel |
+                                     QMessageBox.Yes, QMessageBox.Cancel)
 
         if reply == QMessageBox.Yes:
             self.__updateSettings()
