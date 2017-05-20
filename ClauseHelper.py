@@ -38,6 +38,13 @@ class ClauseHelper(object):
         return expr(s).is_cnf()
 
 
+    '''
+    Parsuje wejściową formułę według ustawień
+    :param s: wejściowy string
+    :param settings: ustawienia - ParserSettings
+    :returns: przetworzony string
+
+    '''
     # TODO parsowanie klauzuli
     @staticmethod
     def __change(s,settings):
