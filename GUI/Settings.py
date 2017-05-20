@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QDir
+from PyQt5.QtGui import QColor
+from PyQt5.QtCore import QDir, Qt
 from configparser import  ConfigParser
 
 
@@ -23,6 +24,12 @@ class ParserSettings():
         self.And = ParserSettings.And
         self.Xor = ParserSettings.Xor
 
+
+    '''
+    Tworzy mape dla parsera z obecnymi ustawieniami
+
+    :returns: dictionary
+    '''
     def changeMap(self):
         result = dict()
         result[self.Equal] = ParserSettings.Equal
@@ -31,6 +38,7 @@ class ParserSettings():
         result[self.Or] = ParserSettings.Or
         result[self.And] = ParserSettings.And
         result[self.Xor] = ParserSettings.Xor
+        return result
 
 
 
@@ -39,7 +47,6 @@ class PalleteType():
     Dark = 2
 
 # TODO poprawić pallete żeby, ładnie wyglądała, wywalić nie potrzebne,
-# dodać last open file z pliku ---- albo wszystkie settings do pliku
 class Settings():
 
     clauseTextFont = "{} {} {}".format('arial',14,'normal')
@@ -61,6 +68,7 @@ class Settings():
     __settings = ""
 
     palleteType = 1
+
 
     @staticmethod
     def initialize(settings = './settings.ini'):
@@ -96,7 +104,6 @@ class Settings():
         Settings.__palette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
         Settings.__palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
         Settings.__palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
-
         Settings.__palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(142, 45, 197).lighter())
         Settings.__palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
 
@@ -106,6 +113,11 @@ class Settings():
         else:
             return self.__defaultPallete
 
+    def getHighlight(self):
+        if self.palleteType == PalleteType.Dark:
+            return self.darkHighlight
+        else:
+            return self.lightHighlight
 
     def __init__(self):
         self.parser = ParserSettings()
@@ -116,6 +128,12 @@ class Settings():
         self.parser.Or = self.__config.get('ParserSettings','Or')
         self.parser.And = self.__config.get('ParserSettings','And')
         self.parser.Xor = self.__config.get('ParserSettings','Xor')
+
+        self.darkHighlight = QColor("#323232")
+        self.lightHighlight = QColor("#e8f2fe")
+        self.errorHighlight = QColor("#3a2323")
+        self.commentColor = QColor("#42647a")
+        self.commentChar = '#'
 
     def updateParserSettings(self):
         self.__config.set('ParserSettings', 'Equal', self.parser.Equal)

@@ -46,6 +46,7 @@ class ParserSettingsPage(QWidget):
         tableLayout = QHBoxLayout()
         tableLayout.addStretch(1)
         tableLayout.addWidget(tableWidget)
+        tableLayout.addStretch(1)
         tableLayout.addSpacing(12)
 
         mainLayout = QVBoxLayout()
