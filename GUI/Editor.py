@@ -50,7 +50,7 @@ class Highlighter (QSyntaxHighlighter):
 
     # Python braces
     braces = [
-        '\(', '\)',
+        '(', ')',
     ]
     def __init__(self, document,settings):
         super(Highlighter, self).__init__(document)
@@ -63,6 +63,7 @@ class Highlighter (QSyntaxHighlighter):
         self.tri_double = (QRegExp('"""'), 2, STYLES['string2'])
 
         self.operators = map(re.escape, self.settings.parser.operators())
+        self.braces = map(re.escape, self.braces)
         rules = []
         #Highlighter.operators = self.operators
         # Keyword, operator, and brace rules
@@ -175,6 +176,7 @@ class CodeEditor(QPlainTextEdit):
     text_was_changed = False
 
     def setText(self,s):
+        self.clear()
         self.insertPlainText(s)
         self.text_was_changed = False
 
@@ -300,3 +302,16 @@ class CodeEditor(QPlainTextEdit):
 
     def textHasChanged(self):
         self.text_was_changed = True
+
+
+    def toPlainTextForParser(self):
+        # remove comments
+        text = self.toPlainText()
+        text = re.sub(r'(?m)#.*\n?', '', text)
+        text = re.sub(re.compile(r"'''.*'''", re.DOTALL), '', text)
+
+        # assume that new line is a AND
+        text = "\n".join([s for s in text.splitlines() if s])
+        text = text.replace("\n", " " + self.settings.parser.And + " ")
+        print(text)
+        return text
