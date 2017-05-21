@@ -98,9 +98,6 @@ class MainWindow(QMainWindow):
 
         self.textEdit = CodeEditor(self.settings)
         self.resultText = QTextEdit()
-        #self.resultText.setFixedHeight(self.resultText.document().size().height() * 2 + self.resultText.contentsMargins().top() * 1)
-        self.resultText.setFixedWidth(self.resultText.document().size().width()*10)
-
         self.resultText.setReadOnly(True)
 
         vbox = QHBoxLayout()
@@ -111,6 +108,8 @@ class MainWindow(QMainWindow):
         widg = QSplitter()
         widg.addWidget(self.textEdit)
         widg.addWidget(self.resultText)
+        widg.setStretchFactor(0, 10)
+        widg.setStretchFactor(1, 1)
         #widg.setLayout(vbox)
         self.setCentralWidget(widg)
 
