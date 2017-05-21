@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
 from PyQt5.QtGui import QIcon,QFont, QColor, QTextFormat, QPainter, QFontMetrics, QPalette, QTextCursor, QTextCharFormat, QSyntaxHighlighter
 from PyQt5.QtCore import Qt, QRect, QRegExp
 from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot
+import re
 
 # TODO stworzenie ładnego edytora
 # TODO naprawić zoomowanie, dodanie do menu konstekstowego actions (dodaj klauzule, wyszukaj)
@@ -42,27 +43,10 @@ class Highlighter (QSyntaxHighlighter):
     """
 
     # Python keywords
-    keywords = [
-        'and', 'assert', 'break', 'class', 'continue', 'def',
-        'del', 'elif', 'else', 'except', 'exec', 'finally',
-        'for', 'from', 'global', 'if', 'import', 'in',
-        'is', 'lambda', 'not', 'or', 'pass', 'print',
-        'raise', 'return', 'try', 'while', 'yield',
-        'None', 'True', 'False',
-    ]
+    keywords = []
 
     # Python operators
-    operators = [
-        '=',
-        # Comparison
-        '==', '!=', '<', '<=', '>', '>=',
-        # Arithmetic
-        '\+', '-', '\*', '/', '//', '\%', '\*\*',
-        # In-place
-        '\+=', '-=', '\*=', '/=', '\%=',
-        # Bitwise
-        '\^', '\|', '\&', '\~', '>>', '<<',
-    ]
+    operators = []
 
     # Python braces
     braces = [
@@ -71,13 +55,14 @@ class Highlighter (QSyntaxHighlighter):
     def __init__(self, document,settings):
         super(Highlighter, self).__init__(document)
         self.settings = settings
+        self.operators = map(re.escape, settings.parser.changeMap().values())
         # Multi-line strings (expression, flag, style)
         # FIXME: The triple-quotes in these two lines will mess up the
         # syntax highlighting from this point onward
         self.tri_single = (QRegExp("'''"), 1, STYLES['string2'])
         self.tri_double = (QRegExp('"""'), 2, STYLES['string2'])
 
-        self.operators = self.settings.parser.operators()
+        self.operators = map(re.escape, self.settings.parser.operators())
         rules = []
         #Highlighter.operators = self.operators
         # Keyword, operator, and brace rules
@@ -204,6 +189,9 @@ class CodeEditor(QPlainTextEdit):
         self.textChanged.connect(self.textHasChanged)
         self.highlight = Highlighter(self.document(),self.settings)
         self.updateLineNumberAreaWidth(0)
+        font = self.font()
+        font.setPointSize(12)
+        self.setFont(font)
         self.__addMenu()
 
 

@@ -26,7 +26,7 @@ class ParserSettings():
 
     #TODO zwraca liste operatorów, zrobić aby można było wstawić do regexa
     def operators(self):
-        return [self.Equal,self.Implies,'\\'+self.Not,'\\'+self.Or,'\\'+self.And,'\\'+self.Xor]
+        return [self.Equal,self.Implies,self.Not,self.Or,self.And,self.Xor]
 
     '''
     Tworzy mape dla parsera z obecnymi ustawieniami
