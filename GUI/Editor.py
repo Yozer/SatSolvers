@@ -187,19 +187,21 @@ class LineNumberArea(QWidget):
 
 
 class CodeEditor(QPlainTextEdit):
+    text_was_changed = False
 
     def setText(self,s):
         self.insertPlainText(s)
+        self.text_was_changed = False
 
-
-    def __init__(self,settings):
-        super().__init__()
+    def __init__(self, parent, settings):
+        super().__init__(parent=parent)
 
         self.settings = settings
         self.lineNumberArea = LineNumberArea(self)
         self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
         self.updateRequest.connect(self.updateLineNumberArea)
         self.cursorPositionChanged.connect(self.highlightCurrentLine)
+        self.textChanged.connect(self.textHasChanged)
         self.highlight = Highlighter(self.document(),self.settings)
         self.updateLineNumberAreaWidth(0)
         self.__addMenu()
@@ -307,3 +309,6 @@ class CodeEditor(QPlainTextEdit):
             selection.cursor.clearSelection()
             extraSelections.append(selection)
         self.setExtraSelections(extraSelections)
+
+    def textHasChanged(self):
+        self.text_was_changed = True
