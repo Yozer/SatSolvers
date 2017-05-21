@@ -114,6 +114,7 @@ class MainWindow(QMainWindow):
         #widg.setLayout(vbox)
         self.setCentralWidget(widg)
 
+
         if Settings.lastOpenFile == Settings.defaultFile:
             self.__openFile = ""
             self.__openFileType = False
@@ -214,13 +215,11 @@ class MainWindow(QMainWindow):
     def saveFile(self):
 
         if self.__openFile != "":
-
-            fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", self.__openFile, "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
-            if fname[0]:
-                f = open(fname[0], 'w')
-                with f:
-                    f.write(self.textEdit.toPlainText())
-                    f.close()
+            print(self.__openFile)
+            f = open(self.__openFile, 'w')
+            with f:
+                f.write(self.textEdit.toPlainText())
+                f.close()
         else:
             fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "", "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
             if fname[0]:
@@ -228,7 +227,10 @@ class MainWindow(QMainWindow):
                 with f:
                     f.write(self.textEdit.toPlainText())
                     f.close()
+            self.__openFile = fname[0]
+
         self.textEdit.text_was_changed = False
+        self.__setTitle()
 
     def __export(self):
         dimacs = SolverHelper.toDimacs(self.textEdit.toPlainText(),self.settings.parser)
@@ -273,6 +275,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
 
         if not self.textEdit.text_was_changed:
+            self.__updateSettings()
             event.accept()
         else:
             reply = QMessageBox.question(self, 'Message',
