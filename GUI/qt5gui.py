@@ -10,6 +10,7 @@ from GUI.Editor import CodeEditor
 from GUI.ConfigDialog import ConfigDialog
 
 class MainWindow(QMainWindow):
+
     def __init__(self):
         super().__init__()
 
@@ -96,7 +97,7 @@ class MainWindow(QMainWindow):
 
     def __initText(self):
 
-        self.textEdit = CodeEditor(self.settings)
+        self.textEdit = CodeEditor(self, self.settings)
         self.resultText = QTextEdit()
         self.resultText.setReadOnly(True)
 
@@ -268,19 +269,22 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
 
-        reply = QMessageBox.question(self, 'Message',
-                                     "Are you sure to quit without saving?", QMessageBox.Save | QMessageBox.Cancel |
-                                     QMessageBox.Yes, QMessageBox.Cancel)
-
-        if reply == QMessageBox.Yes:
-            self.__updateSettings()
-            event.accept()
-        elif reply == QMessageBox.Save:
-            self.__updateSettings()
-            self.saveFile()
+        if not self.textEdit.text_was_changed:
             event.accept()
         else:
-            event.ignore()
+            reply = QMessageBox.question(self, 'Message',
+                                         "Are you sure to quit without saving?", QMessageBox.Save | QMessageBox.Cancel |
+                                         QMessageBox.Yes, QMessageBox.Cancel)
+
+            if reply == QMessageBox.Yes:
+                self.__updateSettings()
+                event.accept()
+            elif reply == QMessageBox.Save:
+                self.__updateSettings()
+                self.saveFile()
+                event.accept()
+            else:
+                event.ignore()
 
     def __updateSettings(self):
         if self.__openFile == "":
