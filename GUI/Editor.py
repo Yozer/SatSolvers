@@ -55,7 +55,6 @@ class Highlighter (QSyntaxHighlighter):
     def __init__(self, document,settings):
         super(Highlighter, self).__init__(document)
         self.settings = settings
-        self.operators = map(re.escape, settings.parser.changeMap().values())
         # Multi-line strings (expression, flag, style)
         # FIXME: The triple-quotes in these two lines will mess up the
         # syntax highlighting from this point onward
