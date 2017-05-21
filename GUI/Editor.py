@@ -1,11 +1,176 @@
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
                              QAction, QMenu, QColorDialog,QPlainTextEdit,QLabel,QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
-from PyQt5.QtGui import QIcon,QFont, QColor, QTextFormat, QPainter, QFontMetrics, QPalette, QTextCursor, QTextCharFormat
-from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtGui import QIcon,QFont, QColor, QTextFormat, QPainter, QFontMetrics, QPalette, QTextCursor, QTextCharFormat, QSyntaxHighlighter
+from PyQt5.QtCore import Qt, QRect, QRegExp
 from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot
 
 # TODO stworzenie ładnego edytora
 # TODO naprawić zoomowanie, dodanie do menu konstekstowego actions (dodaj klauzule, wyszukaj)
+
+def format(color, style=''):
+    """Return a QTextCharFormat with the given attributes.
+    """
+    _color = QColor()
+    _color.setNamedColor(color)
+
+    _format = QTextCharFormat()
+    _format.setForeground(_color)
+    if 'bold' in style:
+        _format.setFontWeight(QFont.Bold)
+    if 'italic' in style:
+        _format.setFontItalic(True)
+
+    return _format
+
+
+# Syntax styles that can be shared by all languages
+STYLES = {
+    'keyword': format('blue'),
+    'operator': format('red'),
+    'brace': format('darkGray'),
+    'defclass': format('black', 'bold'),
+    'string': format('magenta'),
+    'string2': format('darkMagenta'),
+    'comment': format('darkGreen', 'italic'),
+    'self': format('black', 'italic'),
+    'numbers': format('brown'),
+}
+
+
+class Highlighter (QSyntaxHighlighter):
+    """Syntax highlighter for the Python language.
+    """
+
+    # Python keywords
+    keywords = [
+        'and', 'assert', 'break', 'class', 'continue', 'def',
+        'del', 'elif', 'else', 'except', 'exec', 'finally',
+        'for', 'from', 'global', 'if', 'import', 'in',
+        'is', 'lambda', 'not', 'or', 'pass', 'print',
+        'raise', 'return', 'try', 'while', 'yield',
+        'None', 'True', 'False',
+    ]
+
+    # Python operators
+    operators = [
+        '=',
+        # Comparison
+        '==', '!=', '<', '<=', '>', '>=',
+        # Arithmetic
+        '\+', '-', '\*', '/', '//', '\%', '\*\*',
+        # In-place
+        '\+=', '-=', '\*=', '/=', '\%=',
+        # Bitwise
+        '\^', '\|', '\&', '\~', '>>', '<<',
+    ]
+
+    # Python braces
+    braces = [
+        '\(', '\)',
+    ]
+    def __init__(self, document,settings):
+        super(Highlighter, self).__init__(document)
+        self.settings = settings
+        # Multi-line strings (expression, flag, style)
+        # FIXME: The triple-quotes in these two lines will mess up the
+        # syntax highlighting from this point onward
+        self.tri_single = (QRegExp("'''"), 1, STYLES['string2'])
+        self.tri_double = (QRegExp('"""'), 2, STYLES['string2'])
+
+        self.operators = self.settings.parser.operators()
+        rules = []
+        #Highlighter.operators = self.operators
+        # Keyword, operator, and brace rules
+        rules += [(r'\b%s\b' % w, 0, STYLES['keyword'])
+            for w in Highlighter.keywords]
+        rules += [(r'%s' % o, 0, STYLES['operator'])
+            for o in self.operators]
+        rules += [(r'%s' % b, 0, STYLES['brace'])
+            for b in self.braces]
+
+        # All other rules
+
+        rules += [
+            # Double-quoted string, possibly containing escape sequences
+            (r'"[^"\\]*(\\.[^"\\]*)*"', 0, STYLES['string']),
+            # Single-quoted string, possibly containing escape sequences
+            (r"'[^'\\]*(\\.[^'\\]*)*'", 0, STYLES['string']),
+
+            # From '#' until a newline
+            (r'#[^\n]*', 0, STYLES['comment']),
+
+            # Numeric literals
+            (r'\b[+-]?[0-9]+[lL]?\b', 0, STYLES['numbers']),
+            (r'\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\b', 0, STYLES['numbers']),
+            (r'\b[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\b', 0, STYLES['numbers']),
+        ]
+
+        # Build a QRegExp for each pattern
+        self.rules = [(QRegExp(pat), index, fmt)
+            for (pat, index, fmt) in rules]
+
+
+    def highlightBlock(self, text):
+        """Apply syntax highlighting to the given block of text.
+        """
+        # Do other syntax formatting
+        for expression, nth, format in self.rules:
+            index = expression.indexIn(text, 0)
+
+            while index >= 0:
+                # We actually want the index of the nth match
+                index = expression.pos(nth)
+                length = len(expression.cap(nth))
+                self.setFormat(index, length, format)
+                index = expression.indexIn(text, index + length)
+
+        self.setCurrentBlockState(0)
+
+        # Do multi-line strings
+        in_multiline = self.match_multiline(text, *self.tri_single)
+        if not in_multiline:
+            in_multiline = self.match_multiline(text, *self.tri_double)
+
+
+    def match_multiline(self, text, delimiter, in_state, style):
+        """Do highlighting of multi-line strings. ``delimiter`` should be a
+        ``QRegExp`` for triple-single-quotes or triple-double-quotes, and
+        ``in_state`` should be a unique integer to represent the corresponding
+        state changes when inside those strings. Returns True if we're still
+        inside a multi-line string when this function is finished.
+        """
+        # If inside triple-single quotes, start at 0
+        if self.previousBlockState() == in_state:
+            start = 0
+            add = 0
+        # Otherwise, look for the delimiter on this line
+        else:
+            start = delimiter.indexIn(text)
+            # Move past this match
+            add = delimiter.matchedLength()
+
+        # As long as there's a delimiter match on this line...
+        while start >= 0:
+            # Look for the ending delimiter
+            end = delimiter.indexIn(text, start + add)
+            # Ending delimiter on this line?
+            if end >= add:
+                length = end - start + add + delimiter.matchedLength()
+                self.setCurrentBlockState(0)
+            # No; multi-line string
+            else:
+                self.setCurrentBlockState(in_state)
+                length = len(text) - start + add
+            # Apply formatting
+            self.setFormat(start, length, style)
+            # Look for the next match
+            start = delimiter.indexIn(text, start + length)
+
+        # Return True if still inside a multi-line string, False otherwise
+        if self.currentBlockState() == in_state:
+            return True
+        else:
+            return False
 
 class LineNumberArea(QWidget):
     def __init__(self, editor):
@@ -18,7 +183,6 @@ class LineNumberArea(QWidget):
 
 
     def paintEvent(self, event):
-        #print('LineNumberArea.paintEvent')
         self.editor.lineNumberAreaPaintEvent(event)
 
 
@@ -36,11 +200,12 @@ class CodeEditor(QPlainTextEdit):
         self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
         self.updateRequest.connect(self.updateLineNumberArea)
         self.cursorPositionChanged.connect(self.highlightCurrentLine)
-        self.textChanged.connect(lambda :print("text"))
+        self.textChanged.connect(self.comments)
         self.startedComment = False
         self.__addMenu()
-
+        self.highlight = Highlighter(self.document(),self.settings)
         self.updateLineNumberAreaWidth(0)
+
 
     def comments(self):
         print ("change")
@@ -51,6 +216,10 @@ class CodeEditor(QPlainTextEdit):
         addMenu = QMenu("&Add",self)
         addClause = QAction('Add Clause',self)
         addClause.triggered.connect(self.textColorize)
+        color = QAction('color',self)
+        color.triggered.connect(self.color)
+        menu.addAction(color)
+
         addMenu.addAction(addClause)
         menu.addMenu(addMenu)
         self.clause = addClause
@@ -64,6 +233,13 @@ class CodeEditor(QPlainTextEdit):
         result = self.menu.exec_(self.mapToGlobal(event.pos()))
         if result == self.clause:
             print ("yes")
+
+    def color(self):
+        col = self.palette().text().color()
+        fmt = QTextCharFormat()
+        fmt.setForeground(col)
+        self.mergeFormatOnWordOrSelection(fmt)
+
 
     def textColorize(self):
         col = self.settings.commentColor
@@ -92,12 +268,10 @@ class CodeEditor(QPlainTextEdit):
 
 
     def updateLineNumberAreaWidth(self, _):
-        #print('CodeEditor.updateLineNumberAreaWidth: margin = {}'.format(self.lineNumberAreaWidth()))
         self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
 
 
     def updateLineNumberArea(self, rect, dy):
-        #print('CodeEditor.updateLineNumberArea: rect = {}, dy = {}'.format(rect, dy))
 
         if dy:
             self.lineNumberArea.scroll(0, dy)
@@ -105,7 +279,6 @@ class CodeEditor(QPlainTextEdit):
             self.lineNumberArea.update(0, rect.y(), self.lineNumberArea.width(),
                                        rect.height())
 
-        #print('CodeEditor.updateLineNumberArea: rect.contains(self.viewport().rect()) = {}'.format(rect.contains(self.viewport().rect())))
         if rect.contains(self.viewport().rect()):
             self.updateLineNumberAreaWidth(0)
 
@@ -118,7 +291,6 @@ class CodeEditor(QPlainTextEdit):
                                         self.lineNumberAreaWidth(), cr.height()))
 
     def lineNumberAreaPaintEvent(self, event):
-        #print('CodeEditor.lineNumberAreaPaintEvent')
         painter = QPainter(self.lineNumberArea)
         painter.fillRect(event.rect(), Qt.lightGray)
 

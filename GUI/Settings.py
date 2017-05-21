@@ -24,6 +24,9 @@ class ParserSettings():
         self.And = ParserSettings.And
         self.Xor = ParserSettings.Xor
 
+    #TODO zwraca liste operatorów, zrobić aby można było wstawić do regexa
+    def operators(self):
+        return [self.Equal,self.Implies,'\\'+self.Not,'\\'+self.Or,'\\'+self.And,'\\'+self.Xor]
 
     '''
     Tworzy mape dla parsera z obecnymi ustawieniami
@@ -132,6 +135,7 @@ class Settings():
         self.darkHighlight = QColor("#323232")
         self.lightHighlight = QColor("#e8f2fe")
         self.errorHighlight = QColor("#3a2323")
+        self.errorColor = QColor("#e6413c")
         self.commentColor = QColor("#42647a")
         self.commentChar = '#'
 
