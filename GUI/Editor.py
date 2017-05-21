@@ -200,25 +200,19 @@ class CodeEditor(QPlainTextEdit):
         self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
         self.updateRequest.connect(self.updateLineNumberArea)
         self.cursorPositionChanged.connect(self.highlightCurrentLine)
-        self.textChanged.connect(self.comments)
-        self.startedComment = False
-        self.__addMenu()
         self.highlight = Highlighter(self.document(),self.settings)
         self.updateLineNumberAreaWidth(0)
+        self.__addMenu()
 
 
-    def comments(self):
-        print ("change")
 
     def __addMenu(self):
         menu = self.createStandardContextMenu()
         menu.addSeparator()
         addMenu = QMenu("&Add",self)
         addClause = QAction('Add Clause',self)
-        addClause.triggered.connect(self.textColorize)
-        color = QAction('color',self)
-        color.triggered.connect(self.color)
-        menu.addAction(color)
+        addClause.triggered.connect(lambda : print("x"))
+
 
         addMenu.addAction(addClause)
         menu.addMenu(addMenu)
@@ -234,28 +228,6 @@ class CodeEditor(QPlainTextEdit):
         if result == self.clause:
             print ("yes")
 
-    def color(self):
-        col = self.palette().text().color()
-        fmt = QTextCharFormat()
-        fmt.setForeground(col)
-        self.mergeFormatOnWordOrSelection(fmt)
-
-
-    def textColorize(self):
-        col = self.settings.commentColor
-
-
-        fmt = QTextCharFormat()
-        fmt.setForeground(col)
-        self.mergeFormatOnWordOrSelection(fmt)
-
-    def mergeFormatOnWordOrSelection(self, format):
-        cursor = self.textCursor()
-        if not cursor.hasSelection():
-            cursor.select(QTextCursor.WordUnderCursor)
-
-        cursor.mergeCharFormat(format)
-        self.mergeCurrentCharFormat(format)
 
     def lineNumberAreaWidth(self):
         digits = 1
