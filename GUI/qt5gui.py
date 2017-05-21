@@ -164,32 +164,35 @@ class MainWindow(QMainWindow):
         print(self.settings.palleteType)
 
     def newFile(self):
-        if self.__openFile != "":
-            buttonReply = QMessageBox.question(self, 'Save file', "Save changes?",
-                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if buttonReply == QMessageBox.Yes:
-                f = open(self.__openFile, 'w')
-                with f:
-                    f.write(self.textEdit.toPlainText())
-                self.__openFile = ""
-                f.close()
-        elif self.textEdit.toPlainText() != "":
-            buttonReply = QMessageBox.question(self, 'Save file', "Save file?",
-                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if buttonReply == QMessageBox.Yes:
-                self.saveFile()
+        if self.textEdit.text_was_changed:
+            if self.__openFile != "":
+                buttonReply = QMessageBox.question(self, 'Save file', "Save changes?",
+                                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if buttonReply == QMessageBox.Yes:
+                    f = open(self.__openFile, 'w')
+                    with f:
+                        f.write(self.textEdit.toPlainText())
+                    self.__openFile = ""
+                    f.close()
+            elif self.textEdit.toPlainText() != "":
+                buttonReply = QMessageBox.question(self, 'Save file', "Save file?",
+                                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if buttonReply == QMessageBox.Yes:
+                    self.saveFile()
         self.__openFileType = ""
         self.__openFile = ""
         self.textEdit.clear()
+        self.textEdit.text_was_changed = False
 
         self.__setTitle()
 
     def openFile(self):
 
-        buttonReply = QMessageBox.question(self, 'Save file', "Save changes?",
-                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if buttonReply == QMessageBox.Yes:
-            self.saveFile()
+        if self.textEdit.text_was_changed:
+            buttonReply = QMessageBox.question(self, 'Save file', "Save changes?",
+                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if buttonReply == QMessageBox.Yes:
+                self.saveFile()
 
         fname = QFileDialog.getOpenFileName(self, 'Open file', '',"Text Files (*.txt);;Cnf Files (*.cnf);;All Files (*)")
         self.__openFile = fname[0]
@@ -225,7 +228,7 @@ class MainWindow(QMainWindow):
                 with f:
                     f.write(self.textEdit.toPlainText())
                     f.close()
-
+        self.textEdit.text_was_changed = False
 
     def __export(self):
         dimacs = SolverHelper.toDimacs(self.textEdit.toPlainText(),self.settings.parser)
@@ -249,7 +252,7 @@ class MainWindow(QMainWindow):
     # TODO komentarze i zakładki, numeracja linii, kolorowania linii jesli błąd, lub na dole
     # TODO komentowanie klauzul,
     def solve(self):
-        clause = self.textEdit.toPlainText()
+        clause = self.textEdit.toPlainTextForParser()
 
         if self.__openFileType:
             result = SolverHelper.solveDimacs(clause,self.solversChoice.currentText())
