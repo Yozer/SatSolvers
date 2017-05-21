@@ -131,6 +131,7 @@ class MainWindow(QMainWindow):
             except IOError:
                 f = open(Settings.lastOpenFile,'a')
                 f.close()
+
         self.__setTitle()
 
     def __setTitle(self):
@@ -171,6 +172,7 @@ class MainWindow(QMainWindow):
                 with f:
                     f.write(self.textEdit.toPlainText())
                 self.__openFile = ""
+                f.close()
         elif self.textEdit.toPlainText() != "":
             buttonReply = QMessageBox.question(self, 'Save file', "Save file?",
                                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -202,6 +204,7 @@ class MainWindow(QMainWindow):
             with f:
                 data = f.read()
                 self.textEdit.setText(data)
+            f.close()
 
         self.__setTitle()
 
@@ -214,12 +217,14 @@ class MainWindow(QMainWindow):
                 f = open(fname[0], 'w')
                 with f:
                     f.write(self.textEdit.toPlainText())
+                    f.close()
         else:
             fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "", "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
             if fname[0]:
                 f = open(fname[0], 'w')
                 with f:
                     f.write(self.textEdit.toPlainText())
+                    f.close()
 
 
     def __export(self):
@@ -232,6 +237,7 @@ class MainWindow(QMainWindow):
                 print(fname)
                 with f:
                     f.write(dimacs)
+                    f.close()
         else:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Critical)
