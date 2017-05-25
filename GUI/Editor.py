@@ -81,6 +81,9 @@ class Highlighter (QSyntaxHighlighter):
             # Single-quoted string, possibly containing escape sequences
             (r"'[^'\\]*(\\.[^'\\]*)*'", 0, STYLES['string']),
 
+
+
+
             # From '#' until a newline
             (r'#[^\n]*', 0, STYLES['comment']),
 
@@ -178,6 +181,7 @@ class CodeEditor(QPlainTextEdit):
         self.clear()
         self.insertPlainText(s)
         self.text_was_changed = False
+
 
     def __init__(self, parent, settings):
         super().__init__(parent=parent)
@@ -303,6 +307,7 @@ class CodeEditor(QPlainTextEdit):
         self.text_was_changed = True
 
 
+
     def toPlainTextForParser(self):
         # remove comments
         text = self.toPlainText()
@@ -310,7 +315,7 @@ class CodeEditor(QPlainTextEdit):
         text = re.sub(re.compile(r"'''.*'''", re.DOTALL), '', text)
 
         # assume that new line is a AND
-        text = "\n".join([s for s in text.splitlines() if s])
+        text = "\n".join(["("+s+")" for s in text.splitlines() if s])
         text = text.replace("\n", " " + self.settings.parser.And + " ")
-        print(text)
+        #print(text)
         return text
