@@ -1,8 +1,8 @@
 from ClauseHelper import ClauseHelper
 from Solvers import *
 from pyeda.boolalg import expr
+import re
 
-# parser skraca formuły, np. x & ~x - da 0, czyli unsat, a y | (x & ~x) da tylko y
 class SolverHelper():
 
     __solvers = {'Glucose':GlucoseSolver(),'Lingeling':LingelingSolver(),'MiniSat':MiniSatSolver(),'Riss':RissSolver(),
@@ -28,6 +28,9 @@ class SolverHelper():
     def solveDimacs(s, solver = 'Glucose'):
         model = SolverHelper.__solvers[solver].solve(s)
 
+        if (len(model) == 0) & (solver == "RSAT"):
+            model = SolverHelper.__rsatClauseException(s)
+
         if SolverHelper.__solvers[solver].is_Sat():
 
             result = "SAT\n"
@@ -44,6 +47,11 @@ class SolverHelper():
             return "UNSAT"
 
 
+    @staticmethod
+    def __rsatClauseException(dimacs):
+        if re.search('-1',dimacs,re.MULTILINE):
+            return {1:False}
+        return {1:True}
 
     @staticmethod
     def solve(s, settings, solver = 'Glucose'):
@@ -57,6 +65,9 @@ class SolverHelper():
             mapa, dimacs = ClauseHelper.parse_to_dimacs_pyeda(cnf[0])
             dimacs = dimacs.__str__()
             model = SolverHelper.__solvers[solver].solve(dimacs.__str__())
+
+            if (len(mapa) == 4) & (solver == "RSAT"):
+                model = SolverHelper.__rsatClauseException(dimacs)
 
             if SolverHelper.__solvers[solver].is_Sat():
 
