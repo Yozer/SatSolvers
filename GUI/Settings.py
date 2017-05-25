@@ -24,7 +24,6 @@ class ParserSettings():
         self.And = ParserSettings.And
         self.Xor = ParserSettings.Xor
 
-    #TODO zwraca liste operatorów, zrobić aby można było wstawić do regexa
     def operators(self):
         return [self.Equal,self.Implies,self.Not,self.Or,self.And,self.Xor]
 
@@ -52,14 +51,6 @@ class PalleteType():
 # TODO poprawić pallete żeby, ładnie wyglądała, wywalić nie potrzebne,
 class Settings():
 
-    clauseTextFont = "{} {} {}".format('arial',14,'normal')
-    clauseTextHeight = 5
-    clauseTextWidth = 20
-
-
-    resultTextFont = "{} {} {}".format('arial',14,'normal')
-    resultTextHeight = 2
-    resultTextWidth = 20
 
 
     lastOpenFile = ""
