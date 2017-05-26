@@ -28,7 +28,7 @@ class AbstractSolver(object, metaclass=abc.ABCMeta):
         f = open(file, 'w')
         with f:
             f.write(dimacs)
-
+        f.close()
         proc_info = [self._exe,file] + self._params
         proc = subprocess.Popen(proc_info,
                                 stdout=subprocess.PIPE)
