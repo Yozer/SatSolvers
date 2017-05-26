@@ -9,11 +9,13 @@ from GUI.Settings import Settings
 from SolverHelper import SolverHelper
 from GUI.Editor import CodeEditor
 from GUI.ConfigDialog import ConfigDialog
+from GUI.SolveThread import SolveThread
+
 
 
 class TabEditor(QSplitter):
 
-    def __init__(self,parent,settings,filename = ""):
+    def __init__(self,parent,settings,executeButton,filename = ""):
         super(self.__class__, self).__init__()
         self.textEdit = CodeEditor(parent,settings)
         self.resultText = QTextEdit()
@@ -24,7 +26,7 @@ class TabEditor(QSplitter):
         self.setStretchFactor(0, 10)
         self.setStretchFactor(1, 1)
         self.settings = settings
-
+        self.executeButton = executeButton
         self.__updateFile(filename)
         self.__loadFile(filename)
 
@@ -49,6 +51,7 @@ class TabEditor(QSplitter):
             with f:
                 f.write(self.textEdit.toPlainText())
             f.close()
+
         else:
             fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "", "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
             if fname[0]:
@@ -92,6 +95,22 @@ class TabEditor(QSplitter):
             msg.exec_()
 
 
+    def solveC(self,solver):
+        self.resultText.clear()
+
+        if self.fileType == FileType.Dimacs:
+            clause = self.textEdit.toPlainText()
+            thread = SolveThread(clause,solver,self.settings.parser,True)
+        else:
+            clause = self.textEdit.toPlainTextForParser()
+            thread = SolveThread(clause,solver,self.settings.parser)
+
+        print("start")
+        #thread.signal.connect(self.__setResult)
+        thread.signal.conn(self.__setResult)
+        thread.start()
+        print("finished")
+
     def solve(self,solver):
         clause = self.textEdit.toPlainTextForParser()
         self.resultText.clear()
@@ -111,8 +130,25 @@ class TabEditor(QSplitter):
             msg.setWindowTitle("Error")
             msg.exec_()
 
+    def __setResult(self,result):
+        print("in setResult")
+        if result[0] == 'S' or result[0] == 'U':
+            self.resultText.setPlainText(result)
+
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("Error")
+            msg.setInformativeText(result)
+            msg.setWindowTitle("Error")
+            msg.exec_()
+        self.executeButton.setEnabled(True)
+
     def highlightCurrentLine(self):
         self.textEdit.highlightCurrentLine()
+
+    def textChanged(self):
+        return  self.textEdit.text_was_changed
 class FileType():
     CNF = 1
     Dimacs = 2

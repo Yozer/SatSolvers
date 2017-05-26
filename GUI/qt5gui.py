@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
         executeButton.setShortcut('F5')
         executeButton.setStatusTip('Solve clause')
         executeButton.triggered.connect(self.solve)
+        self.executeButton = executeButton
 
         exportDimacs = QAction(QIcon('Icons/export_dimacs.png'),'Export dimacs',self)
         exportDimacs.setStatusTip('Export clause to dimacs')
@@ -96,8 +97,12 @@ class MainWindow(QMainWindow):
         toolbar.addAction(settingsButton)
 
     def removeTab(self,index):
-        if self.tab.widget(index).textEdit.text_was_changed:
-            self.tab.widget(index).saveFile()
+        if self.tab.widget(index).textChanged():
+            reply = QMessageBox.question(self, 'Message',
+                                         "Save file?",
+                                         QMessageBox.Save | QMessageBox.No, QMessageBox.Save)
+            if reply == QMessageBox.Save:
+                self.tab.widget(index).saveFile()
         self.tab.removeTab(index)
 
     def __initText(self):
@@ -109,7 +114,7 @@ class MainWindow(QMainWindow):
             filename = ""
         else:
             filename = Settings.lastOpenFile
-        tabWidget = TabEditor(self,self.settings,filename)
+        tabWidget = TabEditor(self,self.settings,self.executeButton,filename)
 
         tab.tabCloseRequested.connect(self.removeTab)
 
@@ -146,7 +151,7 @@ class MainWindow(QMainWindow):
         print(self.settings.palleteType)
 
     def newFile(self):
-        tabWidget = TabEditor(self,self.settings)
+        tabWidget = TabEditor(self,self.settings,self.executeButton)
         self.tab.addTab(tabWidget,tabWidget.title)
         self.tab.setCurrentIndex(self.tab.count()-1)
         self.__setTitle()
@@ -160,7 +165,7 @@ class MainWindow(QMainWindow):
                 return
 
         if fname[0] != "":
-            tabWidget = TabEditor(self,self.settings,fname[0])
+            tabWidget = TabEditor(self,self.settings,self.executeButton,fname[0])
             self.tab.addTab(tabWidget,tabWidget.title)
             self.tab.setCurrentIndex(self.tab.count()-1)
             self.__setTitle()
@@ -175,7 +180,8 @@ class MainWindow(QMainWindow):
 
     # TODO  kolorowania linii jesli błąd, lub na dole
     def solve(self):
-        self.tab.currentWidget().solve(self.solversChoice.currentText())
+        self.executeButton.setEnabled(False)
+        self.tab.currentWidget().solveC(self.solversChoice.currentText())
 
     def closeEvent(self, event):
 
