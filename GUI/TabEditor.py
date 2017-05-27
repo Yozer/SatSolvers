@@ -2,7 +2,7 @@ import sys,re
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
                              QAction, QFileDialog,QTabBar,QTabWidget, QSplitter,QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
 from PyQt5.QtGui import QIcon, QPalette
-from PyQt5.QtCore import Qt,QFileInfo
+from PyQt5.QtCore import Qt,QFileInfo, QThreadPool
 from Editor import CodeEditor
 sys.path.append("../")
 from GUI.Settings import Settings
@@ -29,6 +29,8 @@ class TabEditor(QSplitter):
         self.executeButton = executeButton
         self.__updateFile(filename)
         self.__loadFile(filename)
+        self.threadPool = QThreadPool()
+        self.threadPool.setMaxThreadCount(2)
 
 
     def __updateFile(self,filename):
@@ -97,6 +99,8 @@ class TabEditor(QSplitter):
 
     def solveC(self,solver):
         self.resultText.clear()
+        self.resultText.setText("")
+
 
         if self.fileType == FileType.Dimacs:
             clause = self.textEdit.toPlainText()
@@ -105,11 +109,10 @@ class TabEditor(QSplitter):
             clause = self.textEdit.toPlainTextForParser()
             thread = SolveThread(clause,solver,self.settings.parser)
 
-        print("start")
         #thread.signal.connect(self.__setResult)
         thread.signal.conn(self.__setResult)
-        thread.start()
-        print("finished")
+        self.executeButton.setEnabled(False)
+        self.threadPool.start(thread)
 
     def solve(self,solver):
         clause = self.textEdit.toPlainTextForParser()

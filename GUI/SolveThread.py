@@ -1,8 +1,10 @@
-from PyQt5.QtCore import QThread, QObject,pyqtSignal
+from PyQt5.QtCore import QThread, QObject,pyqtSignal, QRunnable
+from PyQt5.Qt import QApplication
 import sys
 
 sys.path.append("../")
 from SolverHelper import SolverHelper
+from Solvers import GlucoseSolver
 
 class ResultSignal(QObject):
 
@@ -13,7 +15,8 @@ class ResultSignal(QObject):
 
     def emit(self,s):
         self.resultSignal.emit(s)
-class SolveThread(QThread):
+
+class SolveThread(QRunnable):
 
     def __init__(self,clause,solver,settings,Dimacs = False):
         QThread.__init__(self)
@@ -23,12 +26,31 @@ class SolveThread(QThread):
         self.dimacs = Dimacs
         self.signal = ResultSignal()
 
-    def __del__(self):
-        self.wait()
+
+    def solveDimacs(self,s):
+        solver = GlucoseSolver()
+        model = solver.solve(s)
+
+
+        if solver.is_Sat():
+
+            result = "SAT\n"
+            '''
+            for x in model.keys():
+                result+=str(mapa[x]) + "=" + str(model[x]) + "\n"
+            '''
+            for x in model.keys():
+                result += str(x) + '=' + str(model[x]) + '\n'
+
+
+            return result
+        else:
+            return "UNSAT"
 
     def run(self):
+
         if self.dimacs:
-            result = SolverHelper.solveDimacs(self.clause,self.solver)
+            result = self.solveDimacs(self.clause)
         else:
             result = SolverHelper.solve(self.clause,self.settings,self.solver)
 

@@ -2,7 +2,7 @@ import sys,re
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
                              QAction, QFileDialog,QTabBar,QTabWidget, QSplitter,QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
 from PyQt5.QtGui import QIcon, QPalette
-from PyQt5.QtCore import Qt,QFileInfo
+from PyQt5.QtCore import Qt,QFileInfo, QThreadPool
 sys.path.append("../")
 from GUI.Settings import Settings
 from SolverHelper import SolverHelper
@@ -180,7 +180,6 @@ class MainWindow(QMainWindow):
 
     # TODO  kolorowania linii jesli błąd, lub na dole
     def solve(self):
-        self.executeButton.setEnabled(False)
         self.tab.currentWidget().solveC(self.solversChoice.currentText())
 
     def closeEvent(self, event):

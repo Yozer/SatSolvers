@@ -212,8 +212,6 @@ class CodeEditor(QPlainTextEdit):
         addMenu.addAction(addClause)
         menu.addMenu(addMenu)
         self.clause = addClause
-        #self.setContextMenuPolicy(Qt.CustomContextMenu)
-        #self.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.menu = menu
 
 
