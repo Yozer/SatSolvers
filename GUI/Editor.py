@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
                              QAction, QMenu, QColorDialog,QPlainTextEdit,QLabel,QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
 from PyQt5.QtGui import QIcon,QFont, QColor, QTextFormat, QPainter, QFontMetrics, QPalette, QTextCursor, QTextCharFormat, QSyntaxHighlighter
-from PyQt5.QtCore import Qt, QRect, QRegExp
+from PyQt5.QtCore import Qt, QRect, QRegExp, pyqtSignal, QObject
 from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot
 import re
 
@@ -42,6 +42,7 @@ class Highlighter (QSyntaxHighlighter):
     """Syntax highlighter for the Python language.
     """
 
+
     # Python keywords
     keywords = []
 
@@ -55,6 +56,7 @@ class Highlighter (QSyntaxHighlighter):
     def __init__(self, document,settings):
         super(Highlighter, self).__init__(document)
         self.settings = settings
+        self.settings.parser.connect(self.__setOperators)
         # Multi-line strings (expression, flag, style)
         # FIXME: The triple-quotes in these two lines will mess up the
         # syntax highlighting from this point onward
@@ -68,8 +70,7 @@ class Highlighter (QSyntaxHighlighter):
         # Keyword, operator, and brace rules
         rules += [(r'\b%s\b' % w, 0, STYLES['keyword'])
             for w in Highlighter.keywords]
-        rules += [(r'%s' % o, 0, STYLES['operator'])
-            for o in self.operators]
+
         rules += [(r'%s' % b, 0, STYLES['brace'])
             for b in self.braces]
 
@@ -82,43 +83,57 @@ class Highlighter (QSyntaxHighlighter):
             (r"'[^'\\]*(\\.[^'\\]*)*'", 0, STYLES['string']),
 
 
-
-
-            # From '#' until a newline
-            (r'#[^\n]*', 0, STYLES['comment']),
-
             # Numeric literals
             (r'\b[+-]?[0-9]+[lL]?\b', 0, STYLES['numbers']),
             (r'\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\b', 0, STYLES['numbers']),
             (r'\b[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\b', 0, STYLES['numbers']),
+            # From '#' until a newline
+            (r'#[^\n]*', 0, STYLES['comment']),
+
         ]
 
         # Build a QRegExp for each pattern
         self.rules = [(QRegExp(pat), index, fmt)
             for (pat, index, fmt) in rules]
+        self.__setOperators()
+
+
+
+
+    def __setOperators(self):
+        self.operators = map(re.escape, self.settings.parser.operators())
+        rules = []
+        rules += [(r'%s' % o, 0, STYLES['operator'])
+            for o in self.operators]
+        self.operatorRules = [(QRegExp(pat), index, fmt)
+            for (pat, index, fmt) in rules]
+
+        self.rehighlight()
 
 
     def highlightBlock(self, text):
         """Apply syntax highlighting to the given block of text.
         """
         # Do other syntax formatting
-        for expression, nth, format in self.rules:
-            index = expression.indexIn(text, 0)
+        self.__rules(text,self.operatorRules)
+        self.__rules(text,self.rules)
 
+
+        self.setCurrentBlockState(0)
+
+        # Do multi-line strings
+        in_multiline = self.match_multiline(text, *self.tri_single)
+
+
+    def __rules(self,text,rules):
+        for expression, nth, format in rules:
+            index = expression.indexIn(text, 0)
             while index >= 0:
                 # We actually want the index of the nth match
                 index = expression.pos(nth)
                 length = len(expression.cap(nth))
                 self.setFormat(index, length, format)
                 index = expression.indexIn(text, index + length)
-
-        self.setCurrentBlockState(0)
-
-        # Do multi-line strings
-        in_multiline = self.match_multiline(text, *self.tri_single)
-        if not in_multiline:
-            in_multiline = self.match_multiline(text, *self.tri_double)
-
 
     def match_multiline(self, text, delimiter, in_state, style):
         """Do highlighting of multi-line strings. ``delimiter`` should be a
@@ -303,17 +318,51 @@ class CodeEditor(QPlainTextEdit):
 
     def textHasChanged(self):
         self.text_was_changed = True
+        self.assigments = []
 
+    def addAssigment(self,list):
+        dict = {}
+        for line in list:
+            key,value = line.split('=')
+            dict[key] = value =="True"
+        self.assigments.append(dict)
+
+    def appendAssigment(self,text):
+        for dict in self.assigments:
+            text+=self.settings.parser.And+'('
+            for key in dict:
+                if dict[key]:
+                    text+=self.settings.parser.Not
+                text+=key+self.settings.parser.Or
+
+            text = text[0:-1]
+            text+=')'
+
+        return text
+
+
+    def toTextDimacs(self):
+        text = self.toPlainText()
+        text = re.sub(r'(?m)#.*\n?', '', text)
+        text = re.sub(re.compile(r"'''.*'''", re.DOTALL), '', text)
+
+        return text
 
 
     def toPlainTextForParser(self):
         # remove comments
         text = self.toPlainText()
-        text = re.sub(r'(?m)#.*\n?', '', text)
+        #text = re.sub(r'(?m)#.*\n?', '', text)
+        text = re.sub(r'(?m)^#.*\n?', '', text)
+        text = re.sub(r'(?m)#.*', '', text)
+        text = re.sub(re.compile(r"'''.*'''\n", re.DOTALL), '', text)
         text = re.sub(re.compile(r"'''.*'''", re.DOTALL), '', text)
+        text = re.sub(r'^\s*\n', '', text)
 
+        #print (text)
         # assume that new line is a AND
         text = "\n".join(["("+s+")" for s in text.splitlines() if s])
         text = text.replace("\n", " " + self.settings.parser.And + " ")
         #print(text)
-        return text
+        return self.appendAssigment(text)
+

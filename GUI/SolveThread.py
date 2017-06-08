@@ -50,7 +50,7 @@ class SolveThread(QRunnable):
     def run(self):
 
         if self.dimacs:
-            result = self.solveDimacs(self.clause)
+            result = SolverHelper.solveDimacs(self.clause,self.solver)
         else:
             result = SolverHelper.solve(self.clause,self.settings,self.solver)
 

@@ -8,7 +8,8 @@ from GUI.Settings import Settings
 from SolverHelper import SolverHelper
 from GUI.Editor import CodeEditor
 from GUI.ConfigDialog import ConfigDialog
-from GUI.TabEditor import TabEditor
+from GUI.TabEditor import TabEditor, FileType
+from Generator.GeneratorDialog import GeneratorDialog
 
 class MainWindow(QMainWindow):
 
@@ -19,6 +20,7 @@ class MainWindow(QMainWindow):
         self.__initToolbar()
         self.__initText()
         self.__initUI()
+
 
     def __initUI(self):
 
@@ -71,6 +73,10 @@ class MainWindow(QMainWindow):
         settingsButton.setStatusTip('Settings')
         settingsButton.triggered.connect(self.__openSettings)
 
+        generateButton = QAction('Generate',self)
+        generateButton.setStatusTip('Generate GOPR')
+        generateButton.triggered.connect(self.__generate)
+
         self.solversChoice = QComboBox()
 
         for item in SolverHelper.get_solvers():
@@ -95,6 +101,9 @@ class MainWindow(QMainWindow):
         toolbar.addAction(printGraph)
         toolbar.addSeparator()
         toolbar.addAction(settingsButton)
+        toolbar.addAction(generateButton)
+
+
 
     def removeTab(self,index):
         if self.tab.widget(index).textChanged():
@@ -110,15 +119,19 @@ class MainWindow(QMainWindow):
         tab = QTabWidget()
         tab.setTabsClosable(True)
 
-        if Settings.lastOpenFile == Settings.defaultFile:
-            filename = ""
-        else:
-            filename = Settings.lastOpenFile
-        tabWidget = TabEditor(self,self.settings,self.executeButton,filename)
+        if self.settings.lastOpenFile is not None:
+            for file in self.settings.lastOpenFile:
+
+                if QFileInfo(file).exists():
+                    filename = file
+                    tabWidget = TabEditor(self, self.settings, self.executeButton, filename)
+                    # tabWidget.loadFile()
+
+                    tab.addTab(tabWidget, tabWidget.title)
+
 
         tab.tabCloseRequested.connect(self.removeTab)
 
-        tab.addTab(tabWidget,tabWidget.title)
         self.setCentralWidget(tab)
         self.tab = tab
         self.__setTitle()
@@ -126,7 +139,10 @@ class MainWindow(QMainWindow):
 
 
     def __setTitle(self):
-        shownName = self.tab.currentWidget().title
+        if self.tab.count() == 0:
+            shownName = ""
+        else:
+            shownName = self.tab.currentWidget().title
 
         self.setWindowTitle("%s[*] - Application" % shownName)
 
@@ -136,6 +152,13 @@ class MainWindow(QMainWindow):
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+    def __generate(self):
+
+        print('test')
+        dimacs = GeneratorDialog.getDialog(self)
+        if dimacs != "" and dimacs != None:
+            self.addDimacsFile(dimacs)
+        print(dimacs)
 
     def __openSettings(self):
         dialog = ConfigDialog(self.settings)
@@ -148,13 +171,18 @@ class MainWindow(QMainWindow):
         self.tab.currentWidget().highlightCurrentLine()
 
     def __printGraph(self):
-        print(self.settings.palleteType)
+        self.tab.currentWidget().allAssigments(self.solversChoice.currentText())
 
     def newFile(self):
         tabWidget = TabEditor(self,self.settings,self.executeButton)
         self.tab.addTab(tabWidget,tabWidget.title)
         self.tab.setCurrentIndex(self.tab.count()-1)
         self.__setTitle()
+
+    def addDimacsFile(self, text):
+        self.newFile()
+        self.tab.currentWidget().textEdit.setText(text)
+        self.tab.currentWidget().fileType = FileType.Dimacs
 
     def openFile(self):
 
@@ -166,6 +194,7 @@ class MainWindow(QMainWindow):
 
         if fname[0] != "":
             tabWidget = TabEditor(self,self.settings,self.executeButton,fname[0])
+            #tabWidget.loadFile()
             self.tab.addTab(tabWidget,tabWidget.title)
             self.tab.setCurrentIndex(self.tab.count()-1)
             self.__setTitle()
@@ -173,6 +202,7 @@ class MainWindow(QMainWindow):
 
     def saveFile(self):
         self.tab.currentWidget().saveFile()
+        self.tab.setTabText(self.tab.currentIndex(),self.tab.currentWidget().title)
         self.__setTitle()
 
     def __export(self):
@@ -180,12 +210,13 @@ class MainWindow(QMainWindow):
 
     # TODO  kolorowania linii jesli błąd, lub na dole
     def solve(self):
-        self.tab.currentWidget().solveC(self.solversChoice.currentText())
+        #self.tab.currentWidget().solveC(self.solversChoice.currentText())
+        self.tab.currentWidget().solve(self.solversChoice.currentText())
 
     def closeEvent(self, event):
 
 
-        if not self.textEdit.text_was_changed:
+        if self.tab.count() == 0:
             self.__updateSettings()
             event.accept()
         else:
@@ -204,17 +235,18 @@ class MainWindow(QMainWindow):
                 event.ignore()
 
     def __updateSettings(self):
-        if self.__openFile == "":
-            self.settings.updateValue('File','LastOpenFile',Settings.defaultFile)
-        else:
-            self.settings.updateValue('File','LastOpenFile',str(self.__openFile))
 
+        files = []
+        for i in range(0,self.tab.count()):
+            files.append(self.tab.widget(i).file)
+
+        self.settings.qsettings.setValue(self.settings.section,files)
         self.settings.updateValue('Pallete', 'PalleteType',str(self.settings.palleteType))
         self.settings.closeEvent()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    Settings.initialize()
+    #Settings.initialize()
     ex = MainWindow()
     #app.setStyle('Windows')
     #print (app.style().metaObject().className())

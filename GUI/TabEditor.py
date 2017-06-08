@@ -10,6 +10,7 @@ from SolverHelper import SolverHelper
 from GUI.Editor import CodeEditor
 from GUI.ConfigDialog import ConfigDialog
 from GUI.SolveThread import SolveThread
+from GUI.LoadFileThread import LoadFileThread
 
 
 
@@ -20,6 +21,9 @@ class TabEditor(QSplitter):
         self.textEdit = CodeEditor(parent,settings)
         self.resultText = QTextEdit()
         self.resultText.setReadOnly(True)
+        self.threadPool = QThreadPool()
+        self.threadPool.setMaxThreadCount(2)
+
 
         self.addWidget(self.textEdit)
         self.addWidget(self.resultText)
@@ -29,8 +33,7 @@ class TabEditor(QSplitter):
         self.executeButton = executeButton
         self.__updateFile(filename)
         self.__loadFile(filename)
-        self.threadPool = QThreadPool()
-        self.threadPool.setMaxThreadCount(2)
+
 
 
     def __updateFile(self,filename):
@@ -64,6 +67,20 @@ class TabEditor(QSplitter):
             self.__updateFile(fname[0])
         self.textEdit.text_was_changed = False
 
+    def loadFile(self):
+        self.__loadFile(self.file)
+
+    """
+    def __loadFile(self,filename):
+        if filename == "":
+            self.__setText("")
+        else:
+            thread = LoadFileThread(filename)
+            thread.signal.result.connect(self.__setText)
+            self.threadPool.start(thread)
+        self.textEdit.text_was_changed = False
+    """
+
     def __loadFile(self,filename):
         if filename == "":
             self.__setText("")
@@ -71,7 +88,7 @@ class TabEditor(QSplitter):
             f = open(filename, 'r')
             with f:
                 data = f.read()
-                self.__setText(data)
+            self.__setText(data)
             f.close()
         self.textEdit.text_was_changed = False
 
@@ -103,7 +120,7 @@ class TabEditor(QSplitter):
 
 
         if self.fileType == FileType.Dimacs:
-            clause = self.textEdit.toPlainText()
+            clause = self.textEdit.toTextDimacs()
             thread = SolveThread(clause,solver,self.settings.parser,True)
         else:
             clause = self.textEdit.toPlainTextForParser()
@@ -114,16 +131,54 @@ class TabEditor(QSplitter):
         self.executeButton.setEnabled(False)
         self.threadPool.start(thread)
 
+    def allAssigments(self,solver):
+        count = 0
+        while True:
+            clause = self.textEdit.toPlainTextForParser()
+            self.resultText.clear()
+
+            result = SolverHelper.solve(clause, self.settings.parser, solver)
+
+            if result[0] == 'S' or result[0] == 'U':
+                list = result.splitlines()
+                result = list.pop(0)
+                list.sort()
+                self.resultText.append(result)
+                for line in list:
+                    self.resultText.append(line)
+                if result[0] == 'S':
+                    self.textEdit.addAssigment(list)
+                    count+=1
+                    print(count)
+                else:
+                    break
+
+            else:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText("Error")
+                msg.setInformativeText(result)
+                msg.setWindowTitle("Error")
+                msg.exec_()
+                break
+
     def solve(self,solver):
         clause = self.textEdit.toPlainTextForParser()
         self.resultText.clear()
         if self.fileType == FileType.Dimacs:
-            result = SolverHelper.solveDimacs(self.textEdit.toPlainText(),solver)
+            result = SolverHelper.solveDimacs(self.textEdit.toTextDimacs(),solver)
         else:
             result = SolverHelper.solve(clause,self.settings.parser,solver)
 
         if result[0] == 'S' or result[0] == 'U':
-            self.resultText.setPlainText(result)
+            list = result.splitlines()
+            result = list.pop(0)
+            list.sort()
+            self.resultText.append(result)
+            if result[0] == 'S':
+                self.textEdit.addAssigment(list)
+            for line in list:
+                self.resultText.append(line)
 
         else:
             msg = QMessageBox()
@@ -134,8 +189,8 @@ class TabEditor(QSplitter):
             msg.exec_()
 
     def __setResult(self,result):
-        print("in setResult")
         if result[0] == 'S' or result[0] == 'U':
+            result.splitlines()
             self.resultText.setPlainText(result)
 
         else:
@@ -152,6 +207,8 @@ class TabEditor(QSplitter):
 
     def textChanged(self):
         return  self.textEdit.text_was_changed
+
+
 class FileType():
     CNF = 1
     Dimacs = 2

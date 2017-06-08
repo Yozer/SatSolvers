@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QDate, QSize, Qt
+from PyQt5.QtCore import QDate, QSize, Qt, QPoint
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateTimeEdit,
         QDialog, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
@@ -44,6 +44,7 @@ class ParserSettingsPage(QWidget):
         buttonLayout.addSpacing(12)
 
         tableLayout = QHBoxLayout()
+        tableLayout.addWidget(QCheckBox("zawijanie"))
         tableLayout.addStretch(1)
         tableLayout.addWidget(tableWidget)
         tableLayout.addStretch(1)
@@ -75,7 +76,9 @@ class ParserSettingsPage(QWidget):
 
     # TODO zapisywanie ustawień parsera i sprawdzanie poprawności, konfliktów
     def save(self):
+        #self.settings.parser.Not = self.tableWidget.currentItem().text()
         pass
+
 
 class ThemesPage(QWidget):
     def __init__(self, settings, parent=None):
