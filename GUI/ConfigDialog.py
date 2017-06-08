@@ -44,7 +44,6 @@ class ParserSettingsPage(QWidget):
         buttonLayout.addSpacing(12)
 
         tableLayout = QHBoxLayout()
-        tableLayout.addWidget(QCheckBox("zawijanie"))
         tableLayout.addStretch(1)
         tableLayout.addWidget(tableWidget)
         tableLayout.addStretch(1)

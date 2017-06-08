@@ -1,10 +1,10 @@
-from PyQt5.QtWidgets import QDialog,QVBoxLayout, QComboBox, QLabel, QSpinBox, QGridLayout, QHBoxLayout, QPushButton
-from PyQt5.QtCore import QObject,pyqtSignal
+from PyQt5.QtWidgets import QDialog,QVBoxLayout, QComboBox, QLabel, QSpinBox, QGridLayout, QHBoxLayout, QPushButton, QCheckBox
+from PyQt5.QtCore import QObject,pyqtSignal, Qt
 from Generator.Generator import Generator
 
 
 class ResultSignal(QObject):
-    result = pyqtSignal(int,int,int,int)
+    result = pyqtSignal(int,int,int,int,bool)
 
 
 class GeneratorDialog(QDialog):
@@ -14,7 +14,7 @@ class GeneratorDialog(QDialog):
     def __init__(self,parent = None):
         super(self.__class__,self).__init__(parent=parent)
         self.setModal(True)
-
+        Generator.dimacs = ""
         typeBox = QComboBox()
         typeBox.addItem("Trail")
         typeBox.addItem("Difficulty")
@@ -39,10 +39,14 @@ class GeneratorDialog(QDialog):
         emergencyVal.setSingleStep(1)
         emergencyVal.setRange(2,5)
         self.emergencyVal = emergencyVal
+        self.dimacsVal = QCheckBox("Dimacs")
+
+
 
         self.trailVal.setDisabled(False)
         self.diffVal.setDisabled(True)
         self.emergencyVal.setDisabled(False)
+
 
         vboxLayout = QVBoxLayout()
         vboxLayout.addWidget(typeBox)
@@ -52,6 +56,7 @@ class GeneratorDialog(QDialog):
         vboxLayout.addWidget(diffVal)
         vboxLayout.addWidget(emergencyStr)
         vboxLayout.addWidget(emergencyVal)
+        vboxLayout.addWidget(self.dimacsVal)
         self.setLayout(vboxLayout)
 
         hboxLayout = QHBoxLayout()
@@ -69,22 +74,38 @@ class GeneratorDialog(QDialog):
 
 
     def resultAccepted(self):
-        self.resultSignal.result.emit(self.typeBox.currentIndex(),self.trailVal.value(),self.diffVal.value(),self.emergencyVal.value())
+        self.resultSignal.result.emit(self.typeBox.currentIndex(),self.trailVal.value(),self.diffVal.value(),self.emergencyVal.value(),self.dimacsVal.checkState() == Qt.Checked)
         self.accept()
 
 
     @staticmethod
     def getDialog(parent):
         dialog = GeneratorDialog(parent)
-        dialog.resultSignal.result.connect(GeneratorDialog.getDimacs)
+        dialog.resultSignal.result.connect(GeneratorDialog.getResult)
         returnValue = dialog.exec_()
+
         if returnValue == QDialog.Rejected:
-            return ""
+            return "", False
         elif returnValue == QDialog.Accepted:
-            return GeneratorDialog.dimacs
+            return GeneratorDialog.dimacs, dialog.dimacsVal.checkState() == Qt.Checked
         print(dialog.trailVal.value())
 
 
+    @staticmethod
+    def getResult(type,trailVal,diffVal,emergencyVal,dimacs):
+        if dimacs:
+            GeneratorDialog.getDimacs(type,trailVal,diffVal,emergencyVal)
+        else:
+            GeneratorDialog.getResultString(type,trailVal,diffVal,emergencyVal)
+
+    @staticmethod
+    def getResultString(type,trailVal,diffVal,emergencyVal):
+        if type == GenType.Trail:
+            GeneratorDialog.dimacs = Generator.generateTrailStr(trailVal,emergencyVal)
+        elif type == GenType.Difficulty:
+            GeneratorDialog.dimacs = Generator.generateDiffStr(diffVal,emergencyVal)
+        else:
+            GeneratorDialog.dimacs = Generator.generateAllStr(emergencyVal)
     @staticmethod
     def getDimacs(type,trailVal, diffVal, emergencyVal):
         if type == GenType.Trail:

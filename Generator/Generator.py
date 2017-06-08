@@ -56,21 +56,7 @@ class Generator():
         return [line+'z'+str(trail) for line in list]
 
     @staticmethod
-    def generateTrail(trail,emergency):
-        conditions = Generator.generateConditions()
-        AndStr = ParserSettings.And
-        OrStr = ParserSettings.Or
-
-        trailDiff = 'd'+str(Generator.trails[trail])
-        constraints = Generator.constraints['E'+str(emergency)][trailDiff]
-
-        conditions = Generator.__addTrailNumber(conditions,trail)
-        constraints = Generator.__addTrailNumber(constraints,trail)
-
-        condStr = '(' + AndStr.join(map(str,conditions)) + ')'
-        consStr = '(' + OrStr.join(map(str,constraints)) + ')'
-
-        result = '(' + condStr + ParserSettings.Implies + trailDiff + AndStr + consStr + AndStr + 'o1)' + AndStr + condStr
+    def __toDimacs(result):
         expression = expr(result,True)
         mapa, dimacs = expr2dimacscnf(expression.to_cnf())
         dimacs = dimacs.__str__()
@@ -85,56 +71,19 @@ class Generator():
 
         dimacsStr = re.sub(r'z','@',dimacsStr)
         dimacsStr+=dimacs
-        print(result)
+
         return dimacsStr
 
     @staticmethod
-    def generateDiff(diff,emergency):
-        AndStr = ParserSettings.And
-        OrStr = ParserSettings.Or
-        trails = []
-        for key,value in Generator.trails.items():
-            if value==diff:
-                trails.append(key)
-
-        diffStr = 'd' + str(diff)
-        constraint = Generator.constraints['E'+str(emergency)][diffStr]
-
-        constraints = {}
-        conditions = {}
-        for trail in trails:
-            conditions[trail] = Generator.__addTrailNumber(Generator.generateConditions(),trail)
-            constraints[trail] = Generator.__addTrailNumber(constraint,trail)
-
-        condStr = []
-        consStr = []
-        for trail in trails:
-            condStr.append('(' + AndStr.join(map(str,conditions[trail])) + ')')
-            consStr.append('(' + OrStr.join(map(str,constraints[trail])) + ')')
-
-
-        result = '(' + AndStr.join(map(str,condStr)) + ParserSettings.Implies + diffStr + AndStr + AndStr.join(map(str,consStr)) + AndStr + 'o1)' + AndStr + AndStr.join(map(str,condStr))
-        expression = expr(result,True)
-        mapa, dimacs = expr2dimacscnf(expression.to_cnf())
-        dimacs = dimacs.__str__()
-        list = [variable for variable in mapa.keys()]
-        variables = []
-        for i in range(0,len(list),4):
-            variables.append(list[i])
-
-        dimacsStr = ""
-        for var in variables:
-            dimacsStr+='c '+str(mapa[var])+' = '+str(var) + '\n'
-
-        dimacsStr = re.sub(r'z','@',dimacsStr)
-        dimacsStr+=dimacs
-        print(result)
+    def generateTrail(trail,emergency):
+        result = Generator.generateTrailStr(trail,emergency)
+        dimacsStr = Generator.__toDimacs(result)
         return dimacsStr
 
     @staticmethod
     def generateTrailStr(trail,emergency):
-        AndStr = ParserSettings.And
-        OrStr = ParserSettings.Or
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
 
         trailDiff = 'd' + str(Generator.trails[trail])
         constraints = Generator.constraints['E' + str(emergency)][trailDiff]
@@ -149,10 +98,55 @@ class Generator():
 
         return result
 
+
+    @staticmethod
+    def generateDiff(diff,emergency):
+        result = Generator.generateDiffStr(diif,emergency)
+        dimacsStr = Generator.__toDimacs(result)
+        return dimacsStr
+
+
+    @staticmethod
+    def generateDiffStr(diff,emergency):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+        trails = []
+        for key, value in Generator.trails.items():
+            if value == diff:
+                trails.append(key)
+
+        diffStr = 'd' + str(diff)
+        constraint = Generator.constraints['E' + str(emergency)][diffStr]
+
+        constraints = {}
+        conditions = {}
+        for trail in trails:
+            conditions[trail] = Generator.__addTrailNumber(Generator.generateConditions(), trail)
+            constraints[trail] = Generator.__addTrailNumber(constraint, trail)
+
+        condStr = []
+        consStr = []
+        for trail in trails:
+            condStr.append('(' + AndStr.join(map(str, conditions[trail])) + ')')
+            consStr.append('(' + OrStr.join(map(str, constraints[trail])) + ')')
+
+        result = '(' + AndStr.join(map(str, condStr)) + ParserSettings.Implies + diffStr + AndStr + AndStr.join(
+            map(str, consStr)) + AndStr + 'o1)' + AndStr + AndStr.join(map(str, condStr))
+        return result
+
     @staticmethod
     def generateAll(emergency):
-        AndStr = ParserSettings.And
-        OrStr = ParserSettings.Or
+        result = Generator.generateAllStr(emergency)
+        '''
+        dimacsStr = Generator.__toDimacs(result)
+
+        '''
+        return result
+
+    @staticmethod
+    def generateAllStr(emergency):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
 
         trailsStr = []
 
@@ -160,30 +154,8 @@ class Generator():
             trailsStr.append(Generator.generateTrailStr(trail,emergency))
 
         result = OrStr.join(map(str,trailsStr))
-        for trail in trailsStr:
-            expr(trail).to_cnf()
 
-
-        '''
-        expression = expr(result,True)
-        mapa, dimacs = expr2dimacscnf(expression.to_cnf())
-        dimacs = dimacs.__str__()
-        list = [variable for variable in mapa.keys()]
-        variables = []
-        for i in range(0,len(list),4):
-            variables.append(list[i])
-
-        dimacsStr = ""
-        for var in variables:
-            dimacsStr+='c '+str(mapa[var])+' = '+str(var) + '\n'
-
-        dimacsStr = re.sub(r'z','@',dimacsStr)
-        dimacsStr+=dimacs
-        '''
         return result
-
-
-
 
 
 

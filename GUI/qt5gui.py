@@ -153,12 +153,15 @@ class MainWindow(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
     def __generate(self):
+        result,dimacs = GeneratorDialog.getDialog(self)
+        if result != "" and result != None:
+            if dimacs:
+                self.addDimacsFile(result)
+            else:
+                self.newFile()
+                self.tab.currentWidget().textEdit.setText(result)
+            self.tab.currentWidget().textEdit.text_was_changed = True
 
-        print('test')
-        dimacs = GeneratorDialog.getDialog(self)
-        if dimacs != "" and dimacs != None:
-            self.addDimacsFile(dimacs)
-        print(dimacs)
 
     def __openSettings(self):
         dialog = ConfigDialog(self.settings)
