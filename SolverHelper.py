@@ -88,7 +88,7 @@ class SolverHelper():
                 return "UNSAT"
 
         else:
-            return "Bad clause"
+            return "Pusta klauzula"
 
 
     @staticmethod
