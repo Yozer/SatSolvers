@@ -45,10 +45,10 @@ class ClauseHelper(object):
     :returns: przetworzony string
 
     '''
-    # TODO parsowanie klauzuli
     @staticmethod
     def __change(s,settings):
-        settings.changeMap()
+        for key, val in settings.changeMap().items():
+            s = s.replace(key, val)
         return s
 
     @staticmethod
@@ -56,6 +56,7 @@ class ClauseHelper(object):
         try:
             clause = expr(ClauseHelper.__change(s,settings))
             variables = set(re.findall("\w+", s))
+            print(clause)
 
             return clause.to_cnf(), variables
         except lex.RunError:

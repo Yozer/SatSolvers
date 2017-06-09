@@ -38,7 +38,7 @@ class ParserSettingsPage(QWidget):
         self.tableWidget = tableWidget
 
         buttonLayout = QHBoxLayout()
-        buttonLayout.addStretch(1)
+        buttonLayout.addStretch(2)
         buttonLayout.addWidget(resetButton)
         buttonLayout.addWidget(defaultButton)
         buttonLayout.addSpacing(12)
@@ -72,12 +72,13 @@ class ParserSettingsPage(QWidget):
         self.tableWidget.setItem(0,4,QTableWidgetItem(ParserSettings.And))
         self.tableWidget.setItem(0,5,QTableWidgetItem(ParserSettings.Xor))
 
-
-    # TODO zapisywanie ustawień parsera i sprawdzanie poprawności, konfliktów
     def save(self):
-        #self.settings.parser.Not = self.tableWidget.currentItem().text()
-        pass
-
+        self.settings.parser.Equal = self.tableWidget.item(0, 0).text()
+        self.settings.parser.Implies = self.tableWidget.item(1, 0).text()
+        self.settings.parser.Not = self.tableWidget.item(2, 0).text()
+        self.settings.parser.Or = self.tableWidget.item(3, 0).text()
+        self.settings.parser.And = self.tableWidget.item(4, 0).text()
+        self.settings.parser.Xor = self.tableWidget.item(5, 0).text()
 
 class ThemesPage(QWidget):
     def __init__(self, settings, parent=None):
@@ -138,7 +139,7 @@ class ThemesPage(QWidget):
 
 
 class ConfigDialog(QDialog):
-    def __init__(self, settings, parent=None):
+    def __init__(self, settings, parent):
         super(ConfigDialog, self).__init__(parent)
 
         self.settings = settings
@@ -177,16 +178,11 @@ class ConfigDialog(QDialog):
         mainLayout = QVBoxLayout()
         mainLayout.addLayout(horizontalLayout)
         mainLayout.addStretch(1)
-        #mainLayout.addSpacing(12)
         mainLayout.addLayout(buttonsLayout)
 
         self.setLayout(mainLayout)
         self.setFixedSize(564,311)
-
-
-        #self.resizeEvent = self.onResize
-
-        self.setWindowTitle("Config Dialog")
+        self.setWindowTitle("Settings")
 
     def onResize(self,event):
         print (self.size())
@@ -218,18 +214,6 @@ class ConfigDialog(QDialog):
         themeButton.setText("Themes")
         themeButton.setTextAlignment(Qt.AlignHCenter)
         themeButton.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-
-
-        '''
-        queryButton = QListWidgetItem(self.contentsWidget)
-        #queryButton.setIcon(QIcon(':/images/query.png'))
-        queryButton.setText("Query")
-        queryButton.setTextAlignment(Qt.AlignHCenter)
-        queryButton.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-
-
-        '''
-
 
         self.contentsWidget.currentItemChanged.connect(self.changePage)
 

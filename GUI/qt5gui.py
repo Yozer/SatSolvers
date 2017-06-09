@@ -164,14 +164,14 @@ class MainWindow(QMainWindow):
 
 
     def __openSettings(self):
-        dialog = ConfigDialog(self.settings)
+        dialog = ConfigDialog(self.settings, self)
 
-        dialog.exec_()
-        dialog.show()
+        dialog.exec()
 
         self.setPalette(self.settings.getPallete())
         self.settings.updateParserSettings()
-        self.tab.currentWidget().highlightCurrentLine()
+        if self.tab.currentWidget() is not None:
+            self.tab.currentWidget().highlightCurrentLine()
 
     def __printGraph(self):
         self.tab.currentWidget().allAssigments(self.solversChoice.currentText())
