@@ -18,6 +18,40 @@ class Generator():
     trails = { 1:1,2:1,3:2,4:2,5:3,6:3,7:3,8:3,9:3,10:4,11:4}
 
 
+    @staticmethod
+    def oneConditon(trail):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+        NotStr = ParserSettings.Not
+
+        avalStr = Generator.notConditionsGenerate(Generator.__addTrailNumber(Generator.avalanches,trail))
+        windStr = Generator.notConditionsGenerate(Generator.__addTrailNumber(Generator.wind,trail))
+        fogStr = Generator.notConditionsGenerate(Generator.__addTrailNumber(Generator.fog,trail))
+        tempStr = Generator.notConditionsGenerate(Generator.__addTrailNumber(Generator.temperature,trail))
+        rainStr = Generator.notConditionsGenerate(Generator.__addTrailNumber(Generator.rain,trail))
+        list = [avalStr,windStr,fogStr,tempStr,rainStr]
+
+        return list
+
+    @staticmethod
+    def notConditionsGenerate(list):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+        NotStr = ParserSettings.Not
+
+        aval = []
+        for a in list:
+            tmpList = [a]
+            for ab in list:
+                if ab!=a:
+                    tmpList.append(NotStr + ab)
+
+            tmpStr = "(" + AndStr.join(map(str,tmpList)) + ")"
+            aval.append(tmpStr)
+
+        avalStr = "(" + OrStr.join(map(str,aval)) + ")"
+        return avalStr
+
     constraints['E5'] = {}
     constraints['E5']['d4'] = ['w2', 'w3', 'f2', 'f3', 't2', 't3', 'r2', 'r3', 'a2', 'a3', 'a4', 'a5']
     constraints['E5']['d3'] = ['w2', 'w3', 'f2', 'f3', 't3', 'r2', 'r3', 'a3', 'a4', 'a5']
@@ -76,12 +110,12 @@ class Generator():
 
     @staticmethod
     def generateTrail(trail,emergency):
-        result = Generator.generateTrailStr(trail,emergency)
+        result = Generator.generateTrailStr(trail,emergency,True)
         dimacsStr = Generator.__toDimacs(result)
         return dimacsStr
 
     @staticmethod
-    def generateTrailStr(trail,emergency):
+    def generateTrailStr(trail,emergency, forDimacs = False):
         AndStr = ' ' + ParserSettings.And + ' '
         OrStr = ' ' + ParserSettings.Or + ' '
 
@@ -96,18 +130,20 @@ class Generator():
 
         result = '((' + condStr + ParserSettings.Implies + trailDiff + AndStr + consStr + AndStr + 'o{})'.format(trail) + AndStr + condStr + ')'
 
-        return result
-
+        if forDimacs:
+            return result + AndStr + AndStr.join(map(str, Generator.oneConditon(trail)))
+        else:
+            return result + '\n' + '\n'.join(map(str, Generator.oneConditon(trail))) + '\n'
 
     @staticmethod
     def generateDiff(diff,emergency):
-        result = Generator.generateDiffStr(diif,emergency)
+        result = Generator.generateDiffStr(diff,emergency,True)
         dimacsStr = Generator.__toDimacs(result)
         return dimacsStr
 
 
     @staticmethod
-    def generateDiffStr(diff,emergency):
+    def generateDiffStr(diff,emergency, forDimacs = False):
         AndStr = ' ' + ParserSettings.And + ' '
         OrStr = ' ' + ParserSettings.Or + ' '
         trails = []
@@ -132,26 +168,39 @@ class Generator():
 
         result = '(' + AndStr.join(map(str, condStr)) + ParserSettings.Implies + diffStr + AndStr + AndStr.join(
             map(str, consStr)) + AndStr + 'o1)' + AndStr + AndStr.join(map(str, condStr))
-        return result
+
+
+        if forDimacs:
+            trailStr = []
+            for trail in trails:
+                trailStr.append(AndStr.join(map(str,Generator.oneConditon(trail))))
+
+            return result + AndStr + AndStr.join(map(str, trailStr))
+        else:
+            trailStr = []
+            for trail in trails:
+                trailStr.append('\n'.join(map(str,Generator.oneConditon(trail))))
+
+            return result + '\n' + '\n'.join(map(str, trailStr)) + '\n'
 
     @staticmethod
     def generateAll(emergency):
-        result = Generator.generateAllStr(emergency)
-        '''
+        result = Generator.generateAllStr(emergency,True)
+
         dimacsStr = Generator.__toDimacs(result)
 
-        '''
+
         return result
 
     @staticmethod
-    def generateAllStr(emergency):
+    def generateAllStr(emergency,forDimacs = True):
         AndStr = ' ' + ParserSettings.And + ' '
         OrStr = ' ' + ParserSettings.Or + ' '
 
         trailsStr = []
 
         for (trail,diff) in Generator.trails.items():
-            trailsStr.append(Generator.generateTrailStr(trail,emergency))
+            trailsStr.append(Generator.generateTrailStr(trail,emergency,forDimacs))
 
         result = OrStr.join(map(str,trailsStr))
 
