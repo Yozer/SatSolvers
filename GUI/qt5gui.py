@@ -213,8 +213,8 @@ class MainWindow(QMainWindow):
 
     # TODO  kolorowania linii jesli błąd, lub na dole
     def solve(self):
-        #self.tab.currentWidget().solveC(self.solversChoice.currentText())
-        self.tab.currentWidget().solve(self.solversChoice.currentText())
+        self.tab.currentWidget().solveC(self.solversChoice.currentText())
+        #self.tab.currentWidget().solve(self.solversChoice.currentText())
 
     def closeEvent(self, event):
 

@@ -190,8 +190,14 @@ class TabEditor(QSplitter):
 
     def __setResult(self,result):
         if result[0] == 'S' or result[0] == 'U':
-            result.splitlines()
-            self.resultText.setPlainText(result)
+            list = result.splitlines()
+            result = list.pop(0)
+            list.sort()
+            self.resultText.append(result)
+            if result[0] == 'S':
+                self.textEdit.addAssigment(list)
+            for line in list:
+                self.resultText.append(line)
 
         else:
             msg = QMessageBox()
