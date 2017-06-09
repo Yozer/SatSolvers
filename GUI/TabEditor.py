@@ -154,6 +154,9 @@ class TabEditor(QSplitter):
     def clearAssigments(self):
         self.textEdit.clearAssigments()
 
+    def setReadOnly(self, flag):
+        self.textEdit.setReadOnly(flag)
+
     def solve(self,solver):
         clause = self.textEdit.toPlainTextForParser()
         print("Clause: " + clause)
@@ -172,6 +175,7 @@ class TabEditor(QSplitter):
                 self.textEdit.addAssigment(list)
             for line in list:
                 self.resultText.append(line)
+            return True
 
         else:
             msg = QMessageBox()
@@ -180,6 +184,8 @@ class TabEditor(QSplitter):
             msg.setInformativeText(result)
             msg.setWindowTitle("Error")
             msg.exec_()
+
+        return False
 
     def __setResult(self,result):
         if result[0] == 'S' or result[0] == 'U':

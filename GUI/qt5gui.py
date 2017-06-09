@@ -13,8 +13,6 @@ from Generator.GeneratorDialog import GeneratorDialog
 
 class MainWindow(QMainWindow):
 
-    session_is_running = False
-
     def __init__(self):
         super().__init__()
 
@@ -58,6 +56,7 @@ class MainWindow(QMainWindow):
         self.stopButton.setShortcut('F7')
         self.stopButton.setStatusTip('Stop session')
         self.stopButton.triggered.connect(self.stop)
+        self.stopButton.setEnabled(False)
 
         self.executeButton = QAction(QIcon('Icons/execute.png'),'Execute',self)
         self.executeButton.setShortcut('F5')
@@ -193,7 +192,6 @@ class MainWindow(QMainWindow):
 
         if fname[0] != "":
             tabWidget = TabEditor(self,self.settings,self.executeButton,fname[0])
-            #tabWidget.loadFile()
             self.tab.addTab(tabWidget,tabWidget.title)
             self.tab.setCurrentIndex(self.tab.count()-1)
             self.__setTitle()
@@ -208,19 +206,20 @@ class MainWindow(QMainWindow):
         self.tab.currentWidget().export2dimacs()
 
     def solve(self):
-        session_is_running = True
-        self.fileMenu.setEnabled(False)
-        self.solversChoice.setEnabled(False)
-        self.openFileButton.setEnabled(False)
-        self.newFileButton.setEnabled(False)
-        self.saveFileButton.setEnabled(False)
-        self.exportDimacs.setEnabled(False)
-        self.settingsButton.setEnabled(False)
-        self.generateButton.setEnabled(False)
-        self.tab.currentWidget().solve(self.solversChoice.currentText())
+        success = self.tab.currentWidget().solve(self.solversChoice.currentText())
+        if success:
+            self.fileMenu.setEnabled(False)
+            self.solversChoice.setEnabled(False)
+            self.openFileButton.setEnabled(False)
+            self.newFileButton.setEnabled(False)
+            self.saveFileButton.setEnabled(False)
+            self.exportDimacs.setEnabled(False)
+            self.settingsButton.setEnabled(False)
+            self.generateButton.setEnabled(False)
+            self.stopButton.setEnabled(True)
+            self.tab.currentWidget().setReadOnly(True)
 
     def stop(self):
-        session_is_running = False
         self.fileMenu.setEnabled(True)
         self.solversChoice.setEnabled(True)
         self.openFileButton.setEnabled(True)
@@ -229,6 +228,8 @@ class MainWindow(QMainWindow):
         self.exportDimacs.setEnabled(True)
         self.settingsButton.setEnabled(True)
         self.generateButton.setEnabled(True)
+        self.tab.currentWidget().setReadOnly(False)
+        self.stopButton.setEnabled(False)
         self.tab.currentWidget().clearAssigments()
 
     def closeEvent(self, event):
@@ -263,9 +264,5 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    #Settings.initialize()
     ex = MainWindow()
-    #app.setStyle('Windows')
-    #print (app.style().metaObject().className())
-    #print (QStyleFactory.keys())
     sys.exit(app.exec_())
