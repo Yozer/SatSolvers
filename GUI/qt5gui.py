@@ -13,6 +13,8 @@ from Generator.GeneratorDialog import GeneratorDialog
 
 class MainWindow(QMainWindow):
 
+    session_is_running = False
+
     def __init__(self):
         super().__init__()
 
@@ -27,10 +29,8 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon('./Icons/logo.png'))
         self.setToolButtonStyle(Qt.ToolButtonFollowStyle)
         self.setPalette(self.settings.getPallete())
-        #self.setGeometry(300, 300)
         self.setMinimumSize(300,300)
         self.center()
-        #self.setWindowTitle('SatSolver')
         self.showMaximized()
         self.show()
 
@@ -39,38 +39,42 @@ class MainWindow(QMainWindow):
 
         self.statusBar()
 
-        newFile = QAction(QIcon('Icons/newFile.png'), 'New File', self)
-        newFile.setShortcut('Ctrl+N')
-        newFile.setStatusTip('Create new file')
-        newFile.triggered.connect(self.newFile)
+        self.newFileButton = QAction(QIcon('Icons/newFile.png'), 'New File', self)
+        self.newFileButton.setShortcut('Ctrl+N')
+        self.newFileButton.setStatusTip('Create new file')
+        self.newFileButton.triggered.connect(self.newFile)
 
-        openFile = QAction(QIcon('Icons/openFile.png'), 'Open', self)
-        openFile.setShortcut('Ctrl+O')
-        openFile.setStatusTip('Open new File')
-        openFile.triggered.connect(self.openFile)
+        self.openFileButton = QAction(QIcon('Icons/openFile.png'), 'Open', self)
+        self.openFileButton.setShortcut('Ctrl+O')
+        self.openFileButton.setStatusTip('Open new File')
+        self.openFileButton.triggered.connect(self.openFile)
 
-        saveFile = QAction(QIcon('Icons/saveFile.png'), 'Save', self)
-        saveFile.setShortcut('Ctrl+S')
-        saveFile.setStatusTip('Save File')
-        saveFile.triggered.connect(self.saveFile)
+        self.saveFileButton = QAction(QIcon('Icons/saveFile.png'), 'Save', self)
+        self.saveFileButton.setShortcut('Ctrl+S')
+        self.saveFileButton.setStatusTip('Save File')
+        self.saveFileButton.triggered.connect(self.saveFile)
 
-        executeButton = QAction(QIcon('Icons/execute.png'),'Execute',self)
-        executeButton.setShortcut('F5')
-        executeButton.setStatusTip('Solve clause')
-        executeButton.triggered.connect(self.solve)
-        self.executeButton = executeButton
+        self.stopButton = QAction(QIcon('Icons/stop-flat.png'), 'Stop session', self)
+        self.stopButton.setShortcut('F7')
+        self.stopButton.setStatusTip('Stop session')
+        self.stopButton.triggered.connect(self.stop)
 
-        exportDimacs = QAction(QIcon('Icons/export_dimacs.png'),'Export dimacs',self)
-        exportDimacs.setStatusTip('Export clause to dimacs')
-        exportDimacs.triggered.connect(self.__export)
+        self.executeButton = QAction(QIcon('Icons/execute.png'),'Execute',self)
+        self.executeButton.setShortcut('F5')
+        self.executeButton.setStatusTip('Solve clause')
+        self.executeButton.triggered.connect(self.solve)
 
-        settingsButton = QAction(QIcon('Icons/settings.png'), 'Settings', self)
-        settingsButton.setStatusTip('Settings')
-        settingsButton.triggered.connect(self.__openSettings)
+        self.exportDimacs = QAction(QIcon('Icons/export_dimacs.png'),'Export dimacs',self)
+        self.exportDimacs.setStatusTip('Export clause to dimacs')
+        self.exportDimacs.triggered.connect(self.__export)
 
-        generateButton = QAction('Generate',self)
-        generateButton.setStatusTip('Generate GOPR')
-        generateButton.triggered.connect(self.__generate)
+        self.settingsButton = QAction(QIcon('Icons/settings.png'), 'Settings', self)
+        self.settingsButton.setStatusTip('Settings')
+        self.settingsButton.triggered.connect(self.__openSettings)
+
+        self.generateButton = QAction('Generate',self)
+        self.generateButton.setStatusTip('Generate GOPR')
+        self.generateButton.triggered.connect(self.__generate)
 
         self.solversChoice = QComboBox()
 
@@ -79,23 +83,24 @@ class MainWindow(QMainWindow):
 
 
         menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(newFile)
-        fileMenu.addAction(openFile)
-        fileMenu.addAction(saveFile)
-        fileMenu.addAction(exportDimacs)
+        self.fileMenu = menubar.addMenu('&File')
+        self.fileMenu.addAction(self.newFileButton)
+        self.fileMenu.addAction(self.openFileButton)
+        self.fileMenu.addAction(self.saveFileButton)
+        self.fileMenu.addAction(self.exportDimacs)
 
         toolbar = self.addToolBar('Toolbar')
-        toolbar.addAction(newFile)
-        toolbar.addAction(openFile)
-        toolbar.addAction(saveFile)
-        toolbar.addAction(exportDimacs)
+        toolbar.addAction(self.newFileButton)
+        toolbar.addAction(self.openFileButton)
+        toolbar.addAction(self.saveFileButton)
+        toolbar.addAction(self.exportDimacs)
         toolbar.addSeparator()
-        toolbar.addAction(executeButton)
+        toolbar.addAction(self.executeButton)
+        toolbar.addAction(self.stopButton)
         toolbar.addWidget(self.solversChoice)
         toolbar.addSeparator()
-        toolbar.addAction(settingsButton)
-        toolbar.addAction(generateButton)
+        toolbar.addAction(self.settingsButton)
+        toolbar.addAction(self.generateButton)
 
 
 
@@ -202,18 +207,36 @@ class MainWindow(QMainWindow):
     def __export(self):
         self.tab.currentWidget().export2dimacs()
 
-    # TODO  kolorowania linii jesli błąd, lub na dole
     def solve(self):
-        self.tab.currentWidget().solveC(self.solversChoice.currentText())
-        #self.tab.currentWidget().solve(self.solversChoice.currentText())
+        session_is_running = True
+        self.fileMenu.setEnabled(False)
+        self.solversChoice.setEnabled(False)
+        self.openFileButton.setEnabled(False)
+        self.newFileButton.setEnabled(False)
+        self.saveFileButton.setEnabled(False)
+        self.exportDimacs.setEnabled(False)
+        self.settingsButton.setEnabled(False)
+        self.generateButton.setEnabled(False)
+        self.tab.currentWidget().solve(self.solversChoice.currentText())
+
+    def stop(self):
+        session_is_running = False
+        self.fileMenu.setEnabled(True)
+        self.solversChoice.setEnabled(True)
+        self.openFileButton.setEnabled(True)
+        self.newFileButton.setEnabled(True)
+        self.saveFileButton.setEnabled(True)
+        self.exportDimacs.setEnabled(True)
+        self.settingsButton.setEnabled(True)
+        self.generateButton.setEnabled(True)
+        self.tab.currentWidget().clearAssigments()
 
     def closeEvent(self, event):
-
-
         if self.tab.count() == 0:
             self.__updateSettings()
             event.accept()
         else:
+
             reply = QMessageBox.question(self, 'Message',
                                          "Are you sure to quit without saving?", QMessageBox.Save | QMessageBox.Cancel |
                                          QMessageBox.Yes, QMessageBox.Cancel)

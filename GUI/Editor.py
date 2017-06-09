@@ -320,6 +320,9 @@ class CodeEditor(QPlainTextEdit):
         self.text_was_changed = True
         self.assigments = []
 
+    def clearAssigments(self):
+        self.assigments = []
+
     def addAssigment(self,list):
         dict = {}
         for line in list:
@@ -339,10 +342,12 @@ class CodeEditor(QPlainTextEdit):
             text+=')'
 
         return text
-
+    def getTextToSolve(self):
+        text = self.textCursor().selectedText()
+        return text if text is not None and text != "" else self.toPlainText()
 
     def toTextDimacs(self):
-        text = self.toPlainText()
+        text = self.getTextToSolve()
         text = re.sub(r'(?m)#.*\n?', '', text)
         text = re.sub(re.compile(r"'''.*'''", re.DOTALL), '', text)
 
@@ -351,18 +356,15 @@ class CodeEditor(QPlainTextEdit):
 
     def toPlainTextForParser(self):
         # remove comments
-        text = self.toPlainText()
-        #text = re.sub(r'(?m)#.*\n?', '', text)
+        text = self.getTextToSolve()
         text = re.sub(r'(?m)^#.*\n?', '', text)
         text = re.sub(r'(?m)#.*', '', text)
         text = re.sub(re.compile(r"'''.*'''\n", re.DOTALL), '', text)
         text = re.sub(re.compile(r"'''.*'''", re.DOTALL), '', text)
         text = re.sub(r'^\s*\n', '', text)
 
-        #print (text)
         # assume that new line is a AND
         text = "\n".join(["("+s+")" for s in text.splitlines() if s])
         text = text.replace("\n", " " + self.settings.parser.And + " ")
-        #print(text)
         return self.appendAssigment(text)
 

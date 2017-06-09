@@ -70,17 +70,6 @@ class TabEditor(QSplitter):
     def loadFile(self):
         self.__loadFile(self.file)
 
-    """
-    def __loadFile(self,filename):
-        if filename == "":
-            self.__setText("")
-        else:
-            thread = LoadFileThread(filename)
-            thread.signal.result.connect(self.__setText)
-            self.threadPool.start(thread)
-        self.textEdit.text_was_changed = False
-    """
-
     def __loadFile(self,filename):
         if filename == "":
             self.__setText("")
@@ -162,8 +151,12 @@ class TabEditor(QSplitter):
                 msg.exec_()
                 break
 
+    def clearAssigments(self):
+        self.textEdit.clearAssigments()
+
     def solve(self,solver):
         clause = self.textEdit.toPlainTextForParser()
+        print("Clause: " + clause)
         self.resultText.clear()
         if self.fileType == FileType.Dimacs:
             result = SolverHelper.solveDimacs(self.textEdit.toTextDimacs(),solver)
