@@ -64,11 +64,6 @@ class MainWindow(QMainWindow):
         exportDimacs.setStatusTip('Export clause to dimacs')
         exportDimacs.triggered.connect(self.__export)
 
-        # TODO dodanie rysowanie graphu z networkx i matplotlib
-        printGraph = QAction(QIcon('Icons/graph.png'), 'Print graph', self)
-        printGraph.setStatusTip('Print graph')
-        printGraph.triggered.connect(self.__printGraph)
-
         settingsButton = QAction(QIcon('Icons/settings.png'), 'Settings', self)
         settingsButton.setStatusTip('Settings')
         settingsButton.triggered.connect(self.__openSettings)
@@ -98,7 +93,6 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(executeButton)
         toolbar.addWidget(self.solversChoice)
-        toolbar.addAction(printGraph)
         toolbar.addSeparator()
         toolbar.addAction(settingsButton)
         toolbar.addAction(generateButton)
@@ -172,9 +166,6 @@ class MainWindow(QMainWindow):
         self.settings.updateParserSettings()
         if self.tab.currentWidget() is not None:
             self.tab.currentWidget().highlightCurrentLine()
-
-    def __printGraph(self):
-        self.tab.currentWidget().allAssigments(self.solversChoice.currentText())
 
     def newFile(self):
         tabWidget = TabEditor(self,self.settings,self.executeButton)
