@@ -108,6 +108,12 @@ class Generator():
 
         return dimacsStr
 
+
+    @staticmethod
+    def toDimacs(text):
+        return Generator.__toDimacs(text)
+
+
     @staticmethod
     def generateTrail(trail,emergency):
         result = Generator.generateTrailStr(trail,emergency,True)
@@ -190,23 +196,81 @@ class Generator():
         dimacsStr = Generator.__toDimacs(result)
 
 
-        return result
+        return dimacsStr
 
     @staticmethod
-    def generateAllStr(emergency,forDimacs = True):
+    def generateAllStr(emergency,forDimacs = False):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+
+        trailsStr = []
+        result,cond = Generator.genAllStr(emergency,forDimacs)
+        if forDimacs:
+            return '('+result+')&' + cond
+        else:
+            return result+'\n'+cond
+
+    @staticmethod
+    def genAllStr(emergency,forDimacs = True):
         AndStr = ' ' + ParserSettings.And + ' '
         OrStr = ' ' + ParserSettings.Or + ' '
 
         trailsStr = []
 
         for (trail,diff) in Generator.trails.items():
-            trailsStr.append(Generator.generateTrailStr(trail,emergency,forDimacs))
+            trailsStr.append(Generator.generateTrailStr2(trail,emergency,forDimacs))
 
         result = OrStr.join(map(str,trailsStr))
+        cond = []
+        for (trail,diff) in Generator.trails.items():
+            conditions = Generator.__addTrailNumber(Generator.generateConditions(), trail)
+            condStr = '(' + AndStr.join(map(str, conditions)) + ')'
+            cond.append(condStr)
+
+        if forDimacs:
+            return result,AndStr.join(cond)
+        else:
+            return result, '\n'.join(cond)
+
+
+    @staticmethod
+    def generateTrailStr1(trail,emergency, forDimacs = False):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+
+        trailDiff = 'd' + str(Generator.trails[trail])
+        constraints = Generator.constraints['E' + str(emergency)][trailDiff]
+
+        conditions = Generator.__addTrailNumber(Generator.generateConditions(), trail)
+        constraints = Generator.__addTrailNumber(constraints, trail)
+
+        condStr = '(' + AndStr.join(map(str, conditions)) + ')'
+        consStr = '(' + OrStr.join(map(str, constraints)) + ')'
+
+        result = '((' + condStr + ParserSettings.Implies + trailDiff + 'z{}'.format(trail) + AndStr + consStr + AndStr + 'o{})'.format(trail) + AndStr + condStr + ')'
+
+        if forDimacs:
+            return result
+        else:
+            return result + '\n' + '\n'.join(map(str, Generator.oneConditon(trail))) + '\n'
+
+    @staticmethod
+    def generateTrailStr2(trail,emergency, forDimacs = False):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+
+        trailDiff = 'd' + str(Generator.trails[trail])
+        constraints = Generator.constraints['E' + str(emergency)][trailDiff]
+
+        conditions = Generator.__addTrailNumber(Generator.generateConditions(), trail)
+        constraints = Generator.__addTrailNumber(constraints, trail)
+
+        condStr = '(' + AndStr.join(map(str, conditions)) + ')'
+        consStr = '(' + OrStr.join(map(str, constraints)) + ')'
+
+        result = '('+ trailDiff + AndStr + consStr + AndStr + 'o{})'.format(trail)
 
         return result
-
-
 
 
 
