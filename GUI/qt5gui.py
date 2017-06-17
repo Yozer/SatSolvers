@@ -206,7 +206,7 @@ class MainWindow(QMainWindow):
         self.tab.currentWidget().export2dimacs()
 
     def solve(self):
-        success = self.tab.currentWidget().solve(self.solversChoice.currentText())
+        success = self.tab.currentWidget().solveC(self.solversChoice.currentText())
         if success:
             self.fileMenu.setEnabled(False)
             self.solversChoice.setEnabled(False)

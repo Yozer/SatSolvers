@@ -121,19 +121,23 @@ class GeneratorDialog(QDialog):
             self.trailVal.setDisabled(False)
             self.diffVal.setDisabled(True)
             self.emergencyVal.setDisabled(False)
+            self.dimacsVal.setDisabled(False)
         elif index == GenType.Difficulty:
             self.trailVal.setDisabled(True)
             self.diffVal.setDisabled(False)
             self.emergencyVal.setDisabled(False)
+            self.dimacsVal.setDisabled(False)
         elif index == GenType.All:
             self.trailVal.setDisabled(True)
             self.diffVal.setDisabled(True)
             self.emergencyVal.setDisabled(False)
+            self.dimacsVal.setCheckState(Qt.Checked)
+            self.dimacsVal.setDisabled(True)
         else:
             self.trailVal.setDisabled(True)
             self.diffVal.setDisabled(True)
             self.emergencyVal.setDisabled(True)
-
+            self.dimacsVal.setDisabled(False)
 
 class GenType():
     Trail = 0
