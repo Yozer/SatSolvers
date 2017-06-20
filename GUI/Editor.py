@@ -1,9 +1,12 @@
 from PyQt5.QtWidgets import (QMainWindow, QTextEdit,
-                             QAction, QMenu, QColorDialog,QPlainTextEdit,QLabel,QFileDialog, QApplication,QDesktopWidget,QMessageBox,QComboBox,QVBoxLayout,QWidget,QHBoxLayout)
-from PyQt5.QtGui import QIcon,QFont, QColor, QTextFormat, QPainter, QFontMetrics, QPalette, QTextCursor, QTextCharFormat, QSyntaxHighlighter
+                             QAction, QMenu, QColorDialog, QPlainTextEdit, QLabel, QFileDialog, QApplication,
+                             QDesktopWidget, QMessageBox, QComboBox, QVBoxLayout, QWidget, QHBoxLayout)
+from PyQt5.QtGui import QIcon, QFont, QColor, QTextFormat, QPainter, QFontMetrics, QPalette, QTextCursor, \
+    QTextCharFormat, QSyntaxHighlighter
 from PyQt5.QtCore import Qt, QRect, QRegExp, pyqtSignal, QObject
 from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot
 import re
+
 
 # TODO stworzenie ładnego edytora
 # TODO naprawić zoomowanie, dodanie do menu konstekstowego actions (dodaj klauzule, wyszukaj)
@@ -38,10 +41,9 @@ STYLES = {
 }
 
 
-class Highlighter (QSyntaxHighlighter):
+class Highlighter(QSyntaxHighlighter):
     """Syntax highlighter for the Python language.
     """
-
 
     # Python keywords
     keywords = []
@@ -53,7 +55,8 @@ class Highlighter (QSyntaxHighlighter):
     braces = [
         '(', ')',
     ]
-    def __init__(self, document,settings):
+
+    def __init__(self, document, settings):
         super(Highlighter, self).__init__(document)
         self.settings = settings
         self.settings.parser.connect(self.__setOperators)
@@ -66,13 +69,13 @@ class Highlighter (QSyntaxHighlighter):
         self.operators = map(re.escape, self.settings.parser.operators())
         self.braces = map(re.escape, self.braces)
         rules = []
-        #Highlighter.operators = self.operators
+        # Highlighter.operators = self.operators
         # Keyword, operator, and brace rules
         rules += [(r'\b%s\b' % w, 0, STYLES['keyword'])
-            for w in Highlighter.keywords]
+                  for w in Highlighter.keywords]
 
         rules += [(r'%s' % b, 0, STYLES['brace'])
-            for b in self.braces]
+                  for b in self.braces]
 
         # All other rules
 
@@ -81,7 +84,6 @@ class Highlighter (QSyntaxHighlighter):
             (r'"[^"\\]*(\\.[^"\\]*)*"', 0, STYLES['string']),
             # Single-quoted string, possibly containing escape sequences
             (r"'[^'\\]*(\\.[^'\\]*)*'", 0, STYLES['string']),
-
 
             # Numeric literals
             (r'\b[+-]?[0-9]+[lL]?\b', 0, STYLES['numbers']),
@@ -94,38 +96,32 @@ class Highlighter (QSyntaxHighlighter):
 
         # Build a QRegExp for each pattern
         self.rules = [(QRegExp(pat), index, fmt)
-            for (pat, index, fmt) in rules]
+                      for (pat, index, fmt) in rules]
         self.__setOperators()
-
-
-
 
     def __setOperators(self):
         self.operators = map(re.escape, self.settings.parser.operators())
         rules = []
         rules += [(r'%s' % o, 0, STYLES['operator'])
-            for o in self.operators]
+                  for o in self.operators]
         self.operatorRules = [(QRegExp(pat), index, fmt)
-            for (pat, index, fmt) in rules]
+                              for (pat, index, fmt) in rules]
 
         self.rehighlight()
-
 
     def highlightBlock(self, text):
         """Apply syntax highlighting to the given block of text.
         """
         # Do other syntax formatting
-        self.__rules(text,self.operatorRules)
-        self.__rules(text,self.rules)
-
+        self.__rules(text, self.operatorRules)
+        self.__rules(text, self.rules)
 
         self.setCurrentBlockState(0)
 
         # Do multi-line strings
-        in_multiline = self.match_multiline(text, *self.tri_single)
+        # in_multiline = self.match_multiline(text, *self.tri_single)
 
-
-    def __rules(self,text,rules):
+    def __rules(self, text, rules):
         for expression, nth, format in rules:
             index = expression.indexIn(text, 0)
             while index >= 0:
@@ -175,15 +171,14 @@ class Highlighter (QSyntaxHighlighter):
         else:
             return False
 
+
 class LineNumberArea(QWidget):
     def __init__(self, editor):
         super().__init__(editor)
         self.editor = editor
 
-
     def sizeHint(self):
         return Qsize(self.editor.lineNumberAreaWidth(), 0)
-
 
     def paintEvent(self, event):
         self.editor.lineNumberAreaPaintEvent(event)
@@ -192,13 +187,12 @@ class LineNumberArea(QWidget):
 class CodeEditor(QPlainTextEdit):
     text_was_changed = False
 
-    def setText(self,s):
+    def setText(self, s):
         self.clear()
         self.insertPlainText(s)
         self.text_was_changed = False
 
-
-    def __init__(self, parent, settings):
+    def __init__(self, parent, settings, is_dimacs = False):
         super().__init__(parent=parent)
 
         self.settings = settings
@@ -207,35 +201,30 @@ class CodeEditor(QPlainTextEdit):
         self.updateRequest.connect(self.updateLineNumberArea)
         self.cursorPositionChanged.connect(self.highlightCurrentLine)
         self.textChanged.connect(self.textHasChanged)
-        self.highlight = Highlighter(self.document(),self.settings)
+        if not is_dimacs:
+            self.highlight = Highlighter(self.document(), self.settings)
         self.updateLineNumberAreaWidth(0)
         font = self.font()
         font.setPointSize(12)
         self.setFont(font)
         self.__addMenu()
 
-
-
     def __addMenu(self):
         menu = self.createStandardContextMenu()
         menu.addSeparator()
-        addMenu = QMenu("&Add",self)
-        addClause = QAction('Add Clause',self)
-        addClause.triggered.connect(lambda : print("x"))
-
+        addMenu = QMenu("&Add", self)
+        addClause = QAction('Add Clause', self)
+        addClause.triggered.connect(lambda: print("x"))
 
         addMenu.addAction(addClause)
         menu.addMenu(addMenu)
         self.clause = addClause
         self.menu = menu
 
-
-
     def contextMenuEvent(self, event):
         result = self.menu.exec_(self.mapToGlobal(event.pos()))
         if result == self.clause:
-            print ("yes")
-
+            print("yes")
 
     def lineNumberAreaWidth(self):
         digits = 1
@@ -246,10 +235,8 @@ class CodeEditor(QPlainTextEdit):
         space = 3 + self.fontMetrics().width('9') * digits
         return space
 
-
     def updateLineNumberAreaWidth(self, _):
         self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
-
 
     def updateLineNumberArea(self, rect, dy):
 
@@ -262,13 +249,12 @@ class CodeEditor(QPlainTextEdit):
         if rect.contains(self.viewport().rect()):
             self.updateLineNumberAreaWidth(0)
 
-
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
         cr = self.contentsRect();
         self.lineNumberArea.setGeometry(QRect(cr.left(), cr.top(),
-                                        self.lineNumberAreaWidth(), cr.height()))
+                                              self.lineNumberAreaWidth(), cr.height()))
 
     def lineNumberAreaPaintEvent(self, event):
         painter = QPainter(self.lineNumberArea)
@@ -293,17 +279,13 @@ class CodeEditor(QPlainTextEdit):
             bottom = top + self.blockBoundingRect(block).height()
             blockNumber += 1
 
-
     def __startComment(self):
         pallete = self.palette()
-        pallete.setColor(QPalette.Text , self.settings.commentColor)
+        pallete.setColor(QPalette.Text, self.settings.commentColor)
         self.setPalette(pallete)
-
 
     def highlightCurrentLine(self):
         extraSelections = []
-
-
 
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
@@ -323,25 +305,26 @@ class CodeEditor(QPlainTextEdit):
     def clearAssigments(self):
         self.assigments = []
 
-    def addAssigment(self,list):
+    def addAssigment(self, list):
         dict = {}
         for line in list:
-            key,value = line.split('=')
-            dict[key] = value =="True"
+            key, value = line.split('=')
+            dict[key] = value == "True"
         self.assigments.append(dict)
 
-    def appendAssigment(self,text):
+    def appendAssigment(self, text):
         for dict in self.assigments:
-            text+=self.settings.parser.And+'('
+            text += self.settings.parser.And + '('
             for key in dict:
                 if dict[key]:
-                    text+=self.settings.parser.Not
-                text+=key+self.settings.parser.Or
+                    text += self.settings.parser.Not
+                text += key + self.settings.parser.Or
 
             text = text[0:-1]
-            text+=')'
+            text += ')'
 
         return text
+
     def getTextToSolve(self):
         text = self.textCursor().selectedText()
         return text if text is not None and text != "" else self.toPlainText()
@@ -353,7 +336,6 @@ class CodeEditor(QPlainTextEdit):
 
         return text
 
-
     def toPlainTextForParser(self):
         # remove comments
         text = self.getTextToSolve()
@@ -364,7 +346,6 @@ class CodeEditor(QPlainTextEdit):
         text = re.sub(r'^\s*\n', '', text)
 
         # assume that new line is a AND
-        text = "\n".join(["("+s+")" for s in text.splitlines() if s])
+        text = "\n".join(["(" + s + ")" for s in text.splitlines() if s])
         text = text.replace("\n", " " + self.settings.parser.And + " ")
         return self.appendAssigment(text)
-

@@ -16,25 +16,25 @@ from GUI.LoadFileThread import LoadFileThread
 
 class TabEditor(QSplitter):
 
-    def __init__(self,parent,settings,executeButton,filename = ""):
+    def __init__(self,parent,settings,executeButton,filename = "", is_dimacs = False):
         super(self.__class__, self).__init__()
-        self.textEdit = CodeEditor(parent,settings)
+
+        self.settings = settings
+        self.__updateFile(filename)
+
+        self.textEdit = CodeEditor(parent,settings, self.fileType == FileType.Dimacs or is_dimacs)
         self.resultText = QTextEdit()
         self.resultText.setReadOnly(True)
         self.threadPool = QThreadPool()
         self.threadPool.setMaxThreadCount(2)
 
-
         self.addWidget(self.textEdit)
         self.addWidget(self.resultText)
         self.setStretchFactor(0, 10)
         self.setStretchFactor(1, 1)
-        self.settings = settings
         self.executeButton = executeButton
-        self.__updateFile(filename)
+
         self.__loadFile(filename)
-
-
 
     def __updateFile(self,filename):
         if filename=="":
@@ -48,7 +48,7 @@ class TabEditor(QSplitter):
             else:
                 self.fileType = FileType.CNF
             self.title = QFileInfo(filename).fileName()
-        print(self.title)
+        print(self.title + ":" + str(self.fileType))
 
     def saveFile(self):
         if self.file != "":
@@ -58,7 +58,24 @@ class TabEditor(QSplitter):
             f.close()
 
         else:
-            fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "", "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
+
+            filters = ["Text Files (*.txt)","CNF Files (*.cnf)","All Files (*)"]
+            dialog = QFileDialog(self, "Save File")
+            dialog.setAcceptMode(QFileDialog.AcceptSave)
+            dialog.setNameFilters(["Text Files (*.txt)","CNF Files (*.cnf)","All Files (*)"])
+            dialog.exec()
+
+            ext = ""
+            if filters.index(dialog.selectedNameFilter()) == 0:
+                ext = ".txt"
+            elif filters.index(dialog.selectedNameFilter()) == 1:
+                ext = ".cnf"
+
+            fname = dialog.selectedFiles()
+            if not fname[0].endswith(ext):
+                fname[0] = fname[0] + ext
+
+            #fname = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "", "Text Files (*.txt);;CNF Files (*.cnf);;All Files (*)")
             if fname[0]:
                 f = open(fname[0], 'w')
                 with f:

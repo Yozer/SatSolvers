@@ -171,14 +171,14 @@ class MainWindow(QMainWindow):
         if self.tab.currentWidget() is not None:
             self.tab.currentWidget().highlightCurrentLine()
 
-    def newFile(self):
-        tabWidget = TabEditor(self,self.settings,self.executeButton)
+    def newFile(self, is_dimacs = False):
+        tabWidget = TabEditor(self,self.settings,self.executeButton, is_dimacs=is_dimacs)
         self.tab.addTab(tabWidget,tabWidget.title)
         self.tab.setCurrentIndex(self.tab.count()-1)
         self.__setTitle()
 
     def addDimacsFile(self, text):
-        self.newFile()
+        self.newFile(True)
         self.tab.currentWidget().textEdit.setText(text)
         self.tab.currentWidget().fileType = FileType.Dimacs
 
