@@ -360,14 +360,115 @@ class Generator():
         return dimacsStr
 
     @staticmethod
+    def generateAllDnfOnly3():
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+        trailsStr = []
+
+        ran = range(1,4)
+        for trail in ran:
+            diff = Generator.trails[trail]
+            trailsStr.append('('+'d{}'.format(diff) +AndStr+ 'c{}'.format(trail) + AndStr + 'o{})'.format(trail))
+
+        return '('+OrStr.join(trailsStr)+')'
+
+    @staticmethod
     def generateAllDnf():
         AndStr = ' ' + ParserSettings.And + ' '
         OrStr = ' ' + ParserSettings.Or + ' '
         trailsStr = []
 
         for (trail, diff) in Generator.trails.items():
-            trailsStr.append('('+'d{}z{}'.format(diff,trail) +AndStr+ 'c{}'.format(trail) + AndStr + 'o{})'.format(trail))
+            trailsStr.append('('+'d{}'.format(diff) +AndStr+ 'c{}'.format(trail) + AndStr + 'o{})'.format(trail))
 
         return '('+OrStr.join(trailsStr)+')'
 
 
+    @staticmethod
+    def generateAllCnf(emergency,name):
+        AndStr = ' ' + ParserSettings.And + ' '
+        OrStr = ' ' + ParserSettings.Or + ' '
+        dnfAll = Generator.generateAllDnf()
+        list = expr(dnfAll).to_dnf().__str__().split('And')
+        variablesSet = set()
+        ands = []
+
+        for dnf in list:
+            dnf = re.sub(r'\(', '', dnf)
+            dnf = re.sub(r'\)', '', dnf)
+            dnf = re.sub(r'Or', '', dnf)
+            dnf = re.sub('[\s+]', '', dnf)
+            if dnf != '':
+                res = dnf.split(',')
+                if res[len(res) - 1] == "":
+                    res.pop()
+                ands.append(res)
+
+        for line in ands:
+            for x in line:
+                variablesSet.add(x)
+
+        indexes = [0 for i in range(0, len(ands))]
+        ors = []
+        mainIndex = len(ands) - 1
+        clauseNr = 0
+        while True:
+            clauseNr = clauseNr + 1
+            variables = set()
+            for i in range(0, len(ands)):
+                variables.add(ands[i][indexes[i]])
+
+            ors.append(variables)
+            mainIndex = len(ands) - 1
+            while mainIndex >= 0:
+                indexes[mainIndex] = indexes[mainIndex] + 1
+                if len(ands[mainIndex]) == indexes[mainIndex]:
+                    mainIndex = mainIndex - 1
+                else:
+                    break
+            if indexes[0] >= len(ands[0]):
+                break
+
+            for i in range(mainIndex + 1, len(ands)):
+                indexes[i] = 0
+
+        #orsStr = [' | '.join(map(str, line)) for line in ors]
+        #orsStr = ['(' + line + ')' for line in orsStr]
+        #result = '&'.join(map(str, orsStr))
+
+        constraints = {}
+
+        ran = range(1,int(len(variablesSet)/3)+1)
+        for trail in ran:
+            diff = Generator.trails[trail]
+            constraint = Generator.__addTrailNumber(Generator.constraints['E'+str(emergency)]['d'+str(diff)],trail)
+            for x in constraint:
+                variablesSet.add(x)
+            #constraints[trail] = '(' + OrStr.join(map(str,constraint)) + ')'
+            constraints['c'+str(trail)] = constraint
+            variablesSet.remove('c'+str(trail))
+
+
+        variablesNumber = {}
+        count = 1
+        for variable in variablesSet:
+            variablesNumber[variable] = count
+            count = count + 1
+
+        f = open(name,'w')
+        for (variable,nr) in variablesNumber.items():
+            variable = re.sub(r'z', '@', variable)
+
+            f.write('c {} = {}\n'.format(nr,variable))
+
+        f.write('p cnf {} {} \n'.format(len(variablesNumber),clauseNr))
+        for line in ors:
+            for x in line:
+                if x in variablesNumber:
+                    f.write(str(variablesNumber[x])+' ')
+                else:
+                    for z in constraints[x]:
+                        f.write(str(variablesNumber[z]) + ' ')
+            f.write('0\n')
+
+        f.close()
